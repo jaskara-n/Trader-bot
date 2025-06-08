@@ -16,7 +16,7 @@ import { stakeActionProvider } from "./actions/stake/index";
 import fs from "fs";
 import { createWalletClient, Hex, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-// import { CdpWalletProvider } from "@coinbase/agentkit";
+import { CdpWalletProvider } from "@coinbase/agentkit";
 /**
  * AgentKit Integration Route
  *
@@ -93,8 +93,8 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
     const walletProvider = new ViemWalletProvider(client);
 
     // const walletProvider = await CdpWalletProvider.configureWithWallet({
-    //   apiKeyName: "CDP API KEY NAME",
-    //   apiKeyPrivateKey: "CDP API KEY PRIVATE KEY",
+    //   apiKeyName: process.env.CDP_API_KEY_ID,
+    //   apiKeyPrivateKey: process.env.CDP_API_KEY_PRIVATE_KEY,
     //   networkId: networkId,
     // });
 
@@ -108,11 +108,11 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
       compoundActionProvider(),
     ];
     const canUseCdpApi =
-      process.env.CDP_API_KEY_NAME && process.env.CDP_API_KEY_PRIVATE_KEY;
+      process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_PRIVATE_KEY;
     if (canUseCdpApi) {
       actionProviders.push(
         cdpApiActionProvider({
-          apiKeyName: process.env.CDP_API_KEY_NAME,
+          apiKeyName: process.env.CDP_API_KEY_ID,
           apiKeyPrivateKey: process.env.CDP_API_KEY_PRIVATE_KEY,
         })
       );
