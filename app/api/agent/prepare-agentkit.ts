@@ -13,6 +13,7 @@ import {
 } from "@coinbase/agentkit";
 // import { StakeAPIClient } from "@coinbase/coinbase-sdk";
 import { stakeActionProvider } from "./actions/stake/index";
+import { swapActionProvider } from "./actions/swap/index";
 import fs from "fs";
 import { createWalletClient, Hex, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -105,6 +106,7 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
       walletActionProvider(),
       erc20ActionProvider(),
       stakeActionProvider(),
+      swapActionProvider(),
       compoundActionProvider(),
     ];
     const canUseCdpApi =
