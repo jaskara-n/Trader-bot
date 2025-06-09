@@ -25,12 +25,13 @@ contract TradeHandlerV4ForkTest is Test {
     string ETH_SEPOLIA_RPC_URL = vm.envString("ETH_SEPOLIA_RPC_URL");
     string ARBITRUM_SEPOLIA_RPC_URL = vm.envString("ARBITRUM_SEPOLIA_RPC_URL");
     string UNICHAIN_MAINNET_RPC_URL = vm.envString("UNICHAIN_MAINNET_RPC_URL");
+    string BASE_SEPOLIA_RPC_URL = vm.envString("BASE_SEPOLIA_RPC_URL");
     uint256 fork;
     address USER = makeAddr("USER");
 
     function setUp() public {
         helperConfig = new HelperConfig();
-        (, activeConfig) = helperConfig.getUniChainMainnetConfig();
+        (activeConfig) = helperConfig.getUniChainMainnetConfig();
         // Create and select fork
         fork = vm.createSelectFork(UNICHAIN_MAINNET_RPC_URL);
 
@@ -76,6 +77,35 @@ contract TradeHandlerV4ForkTest is Test {
         console2.log(IERC20(activeConfig.usdc).balanceOf(USER));
         assertGt(IERC20(activeConfig.usdc).balanceOf(USER), 0);
     }
+
+    /**
+     * @dev This test only for base sepolia hence commented, tests our custom deployed pool.
+     */
+    // function test__conductTradeUSDCToUNIMockExactInputSingle() public {
+    //     address usdcMock = 0x10CEA50486207f88AbC954690fE80783E73c3BfE;
+    //     address uniMock = 0x8b39C6b0FB43D18Bf2b82f9D6BfD966c173dA42A;
+
+    //     uint128 amountIn = 1 ether;
+
+    //     PoolKey memory key = getPoolKey(usdcMock, uniMock, 3000);
+    //     bool zeroToOne = true;
+    //     deal(usdcMock, USER, amountIn);
+
+    //     vm.startPrank(USER);
+    //     IERC20(usdcMock).approve(address(tradeHandler), amountIn);
+    //     uint256 amountOut = tradeHandler.conductTradeExactInputSingle(
+    //         key,
+    //         USER,
+    //         amountIn,
+    //         0,
+    //         uint48(block.timestamp) + 1,
+    //         zeroToOne
+    //     );
+    //     vm.stopPrank();
+    //     assertGt(amountOut, 0);
+    //     console2.log(IERC20(usdcMock).balanceOf(USER));
+    //     assertGt(IERC20(uniMock).balanceOf(USER), 0);
+    // }
 
     function test__conductTradeUSDCToETHExactInputSingle() public {
         uint128 amountIn = 1000e6;
