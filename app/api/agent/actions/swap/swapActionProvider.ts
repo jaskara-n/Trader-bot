@@ -2,9 +2,15 @@ import { ActionProvider, CreateAction, Network } from "@coinbase/agentkit";
 import type { z } from "zod";
 import { swapActionSchema } from "./schema";
 import { ViemWalletProvider } from "@coinbase/agentkit";
-import { createPublicClient, http, parseUnits, getContract, type Address } from "viem";
-import { sepolia } from "viem/chains";
-import { TRADE_HANDLER_ABI, type PoolKey, type TradeHandlerV4Contract } from "./types";
+import {
+  createPublicClient,
+  http,
+  parseUnits,
+  encodeFunctionData,
+  type Address,
+} from "viem";
+import { baseSepolia } from "viem/chains";
+import { TRADE_HANDLER_ABI, type PoolKey } from "./types";
 
 class SwapActionProvider extends ActionProvider {
   constructor() {
@@ -26,50 +32,59 @@ class SwapActionProvider extends ActionProvider {
     const { tokenIn, tokenOut, amountIn, minAmountOut, fee = 3000 } = args;
 
     try {
-      // Create public client for contract interaction
+      // Create public client for reading
       const publicClient = createPublicClient({
-        chain: sepolia,
+        chain: baseSepolia,
         transport: http(),
       });
 
-      // Get the TradeHandlerV4 contract address from your configuration
-      const tradeHandlerAddress = "0x00116c0965D08f284A50EcCbCB0bDDC7A9E75b08" as Address; // Replace with actual address
-
-      // Create contract instance
-      const tradeHandler = getContract({
-        address: tradeHandlerAddress,
-        abi: TRADE_HANDLER_ABI,
-        client: publicClient,
-      }) as unknown as TradeHandlerV4Contract;
+      const tradeHandlerAddress =
+        "0x00116c0965D08f284A50EcCbCB0bDDC7A9E75b08" as Address;
 
       // Parse amounts
-      const amountInParsed = parseUnits(amountIn, 18); // Adjust decimals as needed
-      const minAmountOutParsed = parseUnits(minAmountOut, 18); // Adjust decimals as needed
+      const amountInParsed = parseUnits(amountIn, 18);
+      const minAmountOutParsed = parseUnits(minAmountOut, 18);
 
-      // Get pool key
-      const poolKey = await tradeHandler.read.getPoolKey([
-        tokenIn as Address,
-        tokenOut as Address,
-        fee
-      ]);
+      // Create PoolKey directly
+      const poolKey: PoolKey = {
+        currency0: "0x10cea50486207f88abc954690fe80783e73c3bfe" as Address,
+        currency1: "0x8b39c6b0fb43d18bf2b82f9d6bfd966c173da42a" as Address,
+        fee: fee,
+        tickSpacing: 60,
+        hooks: "0x0000000000000000000000000000000000000000" as Address,
+      };
 
       // Determine swap direction
-      const zeroForOne = tokenIn < tokenOut;
+      const zeroForOne = tokenIn.toLowerCase() < tokenOut.toLowerCase();
 
-      // Execute swap
-      const tx = await tradeHandler.write.conductTradeExactInputSingle([
-        poolKey,
-        wallet.getAddress() as Address,
-        amountInParsed,
-        minAmountOutParsed,
-        BigInt(Math.floor(Date.now() / 1000) + 3600), // 1 hour deadline
-        zeroForOne
-      ]);
+      // Encode the function data
+      const data = encodeFunctionData({
+        abi: TRADE_HANDLER_ABI,
+        functionName: "conductTradeExactInputSingle",
+        args: [
+          poolKey,
+          wallet.getAddress() as Address,
+          amountInParsed,
+          minAmountOutParsed,
+          BigInt(Math.floor(Date.now() / 1000) + 3600), // 1 hour deadline
+          zeroForOne,
+        ],
+      });
+
+      // Use wallet's sendTransaction method
+      const hash = await wallet.sendTransaction({
+        to: tradeHandlerAddress,
+        data: data,
+        // Add value if swapping from ETH
+        // value: tokenIn === "ETH" ? amountInParsed : undefined,
+      });
 
       // Wait for transaction
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: hash as `0x${string}`,
+      });
 
-      return `Successfully swapped ${amountIn} ${tokenIn} for ${minAmountOut} ${tokenOut}. Transaction hash: ${receipt.transactionHash}`;
+      return `Successfully swapped ${amountIn} ${tokenIn} for ${tokenOut}. Transaction hash: ${receipt.transactionHash}`;
     } catch (error: unknown) {
       console.error("Error in swap:", error);
       throw error;
@@ -83,4 +98,4 @@ class SwapActionProvider extends ActionProvider {
 
 export const swapActionProvider = () => {
   return new SwapActionProvider();
-}; 
+};
