@@ -11,19 +11,13 @@ import {
   type TransactionReceipt,
   type PublicClient,
   type Hash,
-  type Chain,
-  type Transport,
-  type Client,
-  type PublicActions,
-  type WalletClient,
-  type Account,
   formatUnits,
 } from "viem";
 import { baseSepolia } from "viem/chains";
 import { TRADE_HANDLER_ABI } from "./types";
 import { recordTransaction } from "@/app/utils/transactionStore";
 import { Transaction } from "@/app/types/transactions";
-import { TOKEN_ADDRESSES, CONTRACT_ADDRESSES, POOL_CONFIGS, type PoolKey } from "./config";
+import { TOKEN_ADDRESSES, CONTRACT_ADDRESSES, POOL_CONFIGS } from "./config";
 
 // ERC20 ABI for approvals
 const ERC20_ABI = [
@@ -173,8 +167,6 @@ class SwapActionProvider extends ActionProvider {
     console.log("Wallet address:", walletAddress);
 
     const { tokenIn, tokenOut, amountIn, minAmountOut, fee = 3000 } = args;
-    let approvalTxHash: Hash | undefined;
-    let swapTxHash: Hash | undefined;
 
     try {
       // Get token addresses from symbols
@@ -184,13 +176,15 @@ class SwapActionProvider extends ActionProvider {
       console.log(`Swapping ${amountIn} ${tokenIn} for ${tokenOut}`);
       console.log(`Token addresses - In: ${tokenInAddress}, Out: ${tokenOutAddress}`);
 
-      // Check token balances before swap
-      const balanceBefore = await this.getTokenBalance(tokenInAddress, walletAddress);
-      console.log(`Balance before swap: ${formatUnits(balanceBefore, 18)} ${tokenIn}`);
+      // Get balances BEFORE swap
+      const balanceBeforeInput = await this.getTokenBalance(tokenInAddress, walletAddress);
+      const balanceBeforeOutput = await this.getTokenBalance(tokenOutAddress, walletAddress);
+      console.log(`Balance before swap (${tokenIn}): ${formatUnits(balanceBeforeInput, 18)}`);
+      console.log(`Balance before swap (${tokenOut}): ${formatUnits(balanceBeforeOutput, 18)}`);
 
       const amountInParsed = parseUnits(amountIn, 18);
-      if (balanceBefore < amountInParsed) {
-        throw new Error(`Insufficient ${tokenIn} balance. Required: ${amountIn}, Available: ${formatUnits(balanceBefore, 18)}`);
+      if (balanceBeforeInput < amountInParsed) {
+        throw new Error(`Insufficient ${tokenIn} balance. Required: ${amountIn}, Available: ${formatUnits(balanceBeforeInput, 18)}`);
       }
 
       // Parse amounts
@@ -204,25 +198,12 @@ class SwapActionProvider extends ActionProvider {
       console.log(`Swap direction: ${zeroForOne ? "USDC to UNI" : "UNI to USDC"}`);
 
       // Approve token before swap
-      try {
-        const approvalData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [CONTRACT_ADDRESSES.TRADE_HANDLER, amountInParsed],
-        });
-
-        approvalTxHash = await wallet.sendTransaction({
-          to: tokenInAddress,
-          data: approvalData,
-        }) as Hash;
-
-        console.log(`Approval transaction sent: ${approvalTxHash}`);
-        await this.verifyTransaction(approvalTxHash);
-        console.log("Token approval successful");
-      } catch (error) {
-        console.error("Error in approval:", error);
-        throw new Error(`Token approval failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
+      await this.approveToken(
+        wallet,
+        tokenInAddress,
+        CONTRACT_ADDRESSES.TRADE_HANDLER,
+        amountInParsed
+      );
 
       // Encode the function data
       const data = encodeFunctionData({
@@ -240,42 +221,52 @@ class SwapActionProvider extends ActionProvider {
 
       console.log("Sending swap transaction...");
       // Use wallet's sendTransaction method
-      swapTxHash = await wallet.sendTransaction({
+      const txHash = await wallet.sendTransaction({
         to: CONTRACT_ADDRESSES.TRADE_HANDLER,
         data: data,
-      }) as Hash;
+      });
 
-      console.log(`Swap transaction sent: ${swapTxHash}`);
+      console.log(`Swap transaction sent: ${txHash}`);
 
       // Wait for transaction and verify it succeeded
-      const receipt = await this.verifyTransaction(swapTxHash);
-
-      // Verify the swap actually happened by checking balances
-      const balanceAfter = await this.getTokenBalance(tokenInAddress, walletAddress);
-      console.log(`Balance after swap: ${formatUnits(balanceAfter, 18)} ${tokenIn}`);
-
-      if (balanceAfter >= balanceBefore) {
-        throw new Error(`Swap transaction succeeded but token balance did not decrease. Before: ${formatUnits(balanceBefore, 18)}, After: ${formatUnits(balanceAfter, 18)}`);
-      }
-
-      const balanceChange = balanceBefore - balanceAfter;
-      console.log(`Balance change: ${formatUnits(balanceChange, 18)} ${tokenIn}`);
-
-      // Check if we received the output token
-      const outputBalance = await this.getTokenBalance(tokenOutAddress, walletAddress);
-      console.log(`Output token balance: ${formatUnits(outputBalance, 18)} ${tokenOut}`);
-
-<<<<<<< HEAD
-      // Use the actual transaction hash from the receipt
+      const receipt = await this.verifyTransaction(txHash as Hash);
       const actualTxHash = receipt.transactionHash;
       console.log(`Actual transaction hash: ${actualTxHash}`);
-        const txRecord: Transaction = {
+
+      // Get balances AFTER swap
+      const balanceAfterInput = await this.getTokenBalance(tokenInAddress, walletAddress);
+      const balanceAfterOutput = await this.getTokenBalance(tokenOutAddress, walletAddress);
+      console.log(`Balance after swap (${tokenIn}): ${formatUnits(balanceAfterInput, 18)}`);
+      console.log(`Balance after swap (${tokenOut}): ${formatUnits(balanceAfterOutput, 18)}`);
+
+      // Calculate actual amounts
+      const actualInputAmount = balanceBeforeInput - balanceAfterInput;
+      const actualOutputAmount = balanceAfterOutput - balanceBeforeOutput;
+      
+      console.log(`Actual input amount: ${formatUnits(actualInputAmount, 18)} ${tokenIn}`);
+      console.log(`Actual output amount: ${formatUnits(actualOutputAmount, 18)} ${tokenOut}`);
+
+      // Record transaction with actual amounts
+      const txRecord: Transaction = {
         id: `swap-${Date.now()}`,
         wallet: walletAddress,
         type: 'swap',
         details: {
           tokens: [tokenIn, tokenOut],
-          amounts: [amountIn, minAmountOut],
+          amounts: [
+            formatUnits(actualInputAmount, 18),
+            formatUnits(actualOutputAmount, 18)
+          ],
+          balances: {
+            before: {
+              [tokenIn]: formatUnits(balanceBeforeInput, 18),
+              [tokenOut]: formatUnits(balanceBeforeOutput, 18)
+            },
+            after: {
+              [tokenIn]: formatUnits(balanceAfterInput, 18),
+              [tokenOut]: formatUnits(balanceAfterOutput, 18)
+            }
+          },
           timestamp: Date.now(),
           txHash: actualTxHash,
         }
@@ -283,55 +274,10 @@ class SwapActionProvider extends ActionProvider {
       
       recordTransaction(txRecord);
 
-      return `Successfully swapped ${amountIn} ${tokenIn} for ${tokenOut}. Transaction hash: ${actualTxHash}`;
-
-=======
-      // Construct response with transaction hashes and network information
-      const response = {
-        success: true,
-        message: `Successfully swapped ${amountIn} ${tokenIn} for ${tokenOut}`,
-        network: {
-          name: "Base Sepolia",
-          chainId: baseSepolia.id,
-          explorer: "https://base-sepolia.blockscout.com/tx/"
-        },
-        transactions: {
-          approval: {
-            hash: approvalTxHash,
-            url: `https://base-sepolia.blockscout.com/tx/${approvalTxHash}`
-          },
-          swap: {
-            hash: swapTxHash,
-            url: `https://base-sepolia.blockscout.com/tx/${swapTxHash}`
-          }
-        }
-      };
-
-      // Return a formatted string that includes all transaction hashes and network info
-      return JSON.stringify(response);
->>>>>>> d4bd4db1a066200709539eb1148fdc56e6b3a65c
+      return `Successfully swapped ${formatUnits(actualInputAmount, 18)} ${tokenIn} for ${formatUnits(actualOutputAmount, 18)} ${tokenOut}. Transaction hash: ${actualTxHash}`;
     } catch (error: unknown) {
       console.error("Error in swap:", error);
-      const errorResponse = {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        network: {
-          name: "Base Sepolia",
-          chainId: baseSepolia.id,
-          explorer: "https://base-sepolia.blockscout.com/tx/"
-        },
-        transactions: {
-          approval: approvalTxHash ? {
-            hash: approvalTxHash,
-            url: `https://base-sepolia.blockscout.com/tx/${approvalTxHash}`
-          } : undefined,
-          swap: swapTxHash ? {
-            hash: swapTxHash,
-            url: `https://base-sepolia.blockscout.com/tx/${swapTxHash}`
-          } : undefined
-        }
-      };
-      throw new Error(JSON.stringify(errorResponse));
+      throw new Error(`Swap failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

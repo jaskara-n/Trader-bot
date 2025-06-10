@@ -1,3 +1,8 @@
+export interface TokenBalances {
+  before: Record<string, string>;
+  after: Record<string, string>;
+}
+
 export interface Transaction {
   id: string;
   wallet: string;
@@ -5,10 +10,7 @@ export interface Transaction {
   details: {
     tokens?: string[];
     amounts?: string[];
-    balances?: {
-      before: Record<string, string>;
-      after: Record<string, string>;
-    };
+    balances?: TokenBalances;
     timestamp: number;
     txHash?: string;
   };
