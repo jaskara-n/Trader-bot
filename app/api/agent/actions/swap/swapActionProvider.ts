@@ -173,6 +173,8 @@ class SwapActionProvider extends ActionProvider {
     console.log("Wallet address:", walletAddress);
 
     const { tokenIn, tokenOut, amountIn, minAmountOut, fee = 3000 } = args;
+    let approvalTxHash: Hash | undefined;
+    let swapTxHash: Hash | undefined;
 
     try {
       // Get token addresses from symbols
@@ -202,12 +204,25 @@ class SwapActionProvider extends ActionProvider {
       console.log(`Swap direction: ${zeroForOne ? "USDC to UNI" : "UNI to USDC"}`);
 
       // Approve token before swap
-      await this.approveToken(
-        wallet,
-        tokenInAddress,
-        CONTRACT_ADDRESSES.TRADE_HANDLER,
-        amountInParsed
-      );
+      try {
+        const approvalData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [CONTRACT_ADDRESSES.TRADE_HANDLER, amountInParsed],
+        });
+
+        approvalTxHash = await wallet.sendTransaction({
+          to: tokenInAddress,
+          data: approvalData,
+        }) as Hash;
+
+        console.log(`Approval transaction sent: ${approvalTxHash}`);
+        await this.verifyTransaction(approvalTxHash);
+        console.log("Token approval successful");
+      } catch (error) {
+        console.error("Error in approval:", error);
+        throw new Error(`Token approval failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
 
       // Encode the function data
       const data = encodeFunctionData({
@@ -225,15 +240,15 @@ class SwapActionProvider extends ActionProvider {
 
       console.log("Sending swap transaction...");
       // Use wallet's sendTransaction method
-      const txHash = await wallet.sendTransaction({
+      swapTxHash = await wallet.sendTransaction({
         to: CONTRACT_ADDRESSES.TRADE_HANDLER,
         data: data,
-      });
+      }) as Hash;
 
-      console.log(`Swap transaction sent: ${txHash}`);
+      console.log(`Swap transaction sent: ${swapTxHash}`);
 
       // Wait for transaction and verify it succeeded
-      const receipt = await this.verifyTransaction(txHash as Hash);
+      const receipt = await this.verifyTransaction(swapTxHash);
 
       // Verify the swap actually happened by checking balances
       const balanceAfter = await this.getTokenBalance(tokenInAddress, walletAddress);
@@ -250,6 +265,7 @@ class SwapActionProvider extends ActionProvider {
       const outputBalance = await this.getTokenBalance(tokenOutAddress, walletAddress);
       console.log(`Output token balance: ${formatUnits(outputBalance, 18)} ${tokenOut}`);
 
+<<<<<<< HEAD
       // Use the actual transaction hash from the receipt
       const actualTxHash = receipt.transactionHash;
       console.log(`Actual transaction hash: ${actualTxHash}`);
@@ -269,9 +285,53 @@ class SwapActionProvider extends ActionProvider {
 
       return `Successfully swapped ${amountIn} ${tokenIn} for ${tokenOut}. Transaction hash: ${actualTxHash}`;
 
+=======
+      // Construct response with transaction hashes and network information
+      const response = {
+        success: true,
+        message: `Successfully swapped ${amountIn} ${tokenIn} for ${tokenOut}`,
+        network: {
+          name: "Base Sepolia",
+          chainId: baseSepolia.id,
+          explorer: "https://base-sepolia.blockscout.com/tx/"
+        },
+        transactions: {
+          approval: {
+            hash: approvalTxHash,
+            url: `https://base-sepolia.blockscout.com/tx/${approvalTxHash}`
+          },
+          swap: {
+            hash: swapTxHash,
+            url: `https://base-sepolia.blockscout.com/tx/${swapTxHash}`
+          }
+        }
+      };
+
+      // Return a formatted string that includes all transaction hashes and network info
+      return JSON.stringify(response);
+>>>>>>> d4bd4db1a066200709539eb1148fdc56e6b3a65c
     } catch (error: unknown) {
       console.error("Error in swap:", error);
-      throw new Error(`Swap failed: ${error instanceof Error ? error.message : String(error)}`);
+      const errorResponse = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        network: {
+          name: "Base Sepolia",
+          chainId: baseSepolia.id,
+          explorer: "https://base-sepolia.blockscout.com/tx/"
+        },
+        transactions: {
+          approval: approvalTxHash ? {
+            hash: approvalTxHash,
+            url: `https://base-sepolia.blockscout.com/tx/${approvalTxHash}`
+          } : undefined,
+          swap: swapTxHash ? {
+            hash: swapTxHash,
+            url: `https://base-sepolia.blockscout.com/tx/${swapTxHash}`
+          } : undefined
+        }
+      };
+      throw new Error(JSON.stringify(errorResponse));
     }
   }
 
