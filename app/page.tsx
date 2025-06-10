@@ -12,8 +12,6 @@ import ReactMarkdown from "react-markdown";
 export default function Home() {
   const [input, setInput] = useState("");
   const { messages, sendMessage, isThinking } = useAgent();
-
-  // Ref for the messages container
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Function to scroll to the bottom
@@ -34,32 +32,51 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col flex-grow items-center justify-center text-black dark:text-white w-full h-full">
-      <div className="w-full max-w-2xl h-[70vh] bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 flex flex-col">
+    <div className="flex flex-col items-center justify-center w-full h-full min-h-screen bg-[#121212]">
+      <div className="w-[90%] max-w-4xl h-[90vh] bg-[#1E1E1E] rounded-2xl shadow-lg flex flex-col overflow-hidden border border-gray-800">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-800">
+          <h1 className="text-xl font-semibold text-white">Hooman</h1>
+        </div>
+
         {/* Chat Messages */}
-        <div className="flex-grow overflow-y-auto space-y-3 p-2">
+        <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           {messages.length === 0 ? (
-            <p className="text-center text-gray-500">Start chatting with AgentKit...</p>
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-500 text-center">Start by asking me to analyze your smart contracts...</p>
+            </div>
           ) : (
             messages.map((msg, index) => (
               <div
                 key={index}
-                className={`p-3 rounded-2xl shadow ${
-                  msg.sender === "user"
-                    ? "bg-[#0052FF] text-white self-end"
-                    : "bg-gray-100 dark:bg-gray-700 self-start"
+                className={`p-4 rounded-2xl max-w-[80%] ${
+                  msg.sender === "user" ? "bg-[#6E41E2] text-white ml-auto" : "bg-[#2A2A2A] text-gray-200 mr-auto"
                 }`}
               >
                 <ReactMarkdown
                   components={{
-                    a: props => (
+                    a: (props) => (
                       <a
                         {...props}
-                        className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-purple-300 underline hover:text-purple-200"
                         target="_blank"
                         rel="noopener noreferrer"
                       />
                     ),
+                    code: ({ node, className, children, ...props }) => {
+                      const match = /language-(\w+)/.exec(className || "");
+                      return !className ? (
+                        <code className="bg-gray-800 text-gray-200 px-1 py-0.5 rounded" {...props}>
+                          {children}
+                        </code>
+                      ) : (
+                        <div className="bg-gray-800 rounded-md p-4 my-2 overflow-x-auto">
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        </div>
+                      );
+                    },
                   }}
                 >
                   {msg.text}
@@ -69,29 +86,45 @@ export default function Home() {
           )}
 
           {/* Thinking Indicator */}
-          {isThinking && <div className="text-right mr-2 text-gray-500 italic">🤖 Thinking...</div>}
+          {isThinking && (
+            <div className="flex items-center space-x-2 text-gray-400 ml-4">
+              <span>Thinking</span>
+              <span className="flex space-x-1">
+                <span
+                  className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
+                  style={{ animationDelay: "0ms" }}
+                ></span>
+                <span
+                  className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
+                  style={{ animationDelay: "300ms" }}
+                ></span>
+                <span
+                  className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
+                  style={{ animationDelay: "600ms" }}
+                ></span>
+              </span>
+            </div>
+          )}
 
           {/* Invisible div to track the bottom */}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input Box */}
-        <div className="flex items-center space-x-2 mt-2">
+        <div className="p-4 border-t border-gray-800 flex items-center space-x-2">
           <input
             type="text"
-            className="flex-grow p-2 rounded border dark:bg-gray-700 dark:border-gray-600"
-            placeholder={"Type a message..."}
+            className="flex-grow p-3 rounded-xl bg-[#2A2A2A] border border-gray-700 text-white focus:outline-none focus:border-purple-500 transition-colors"
+            placeholder="Type your message..."
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && onSendMessage()}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSendMessage()}
             disabled={isThinking}
           />
           <button
             onClick={onSendMessage}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              isThinking
-                ? "bg-gray-300 cursor-not-allowed text-gray-500"
-                : "bg-[#0052FF] hover:bg-[#003ECF] text-white shadow-md"
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              isThinking ? "bg-gray-700 cursor-not-allowed text-gray-500" : "bg-[#6E41E2] hover:bg-[#5B35C5] text-white"
             }`}
             disabled={isThinking}
           >
