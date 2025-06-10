@@ -1,0 +1,36 @@
+[
+  {
+    "id": "swap-1749565414867",
+    "wallet": "0xb31fE911B5dB22fBa49b362496c66DDa5Bce35B6",
+    "type": "swap",
+    "details": {
+      "tokens": [
+        "USDC",
+        "UNI"
+      ],
+      "amounts": [
+        "100",
+        "0"
+      ],
+      "timestamp": 1749565414867,
+      "txHash": "0x91b2a65ff944fef3d5bd52080446d20b89acb87a77f946badd6ba7a3d8444f22"
+    }
+  },
+  {
+    "id": "swap-1749567310385",
+    "wallet": "0xb31fE911B5dB22fBa49b362496c66DDa5Bce35B6",
+    "type": "swap",
+    "details": {
+      "tokens": [
+        "USDC",
+        "UNI"
+      ],
+      "amounts": [
+        "10",
+        "0"
+      ],
+      "timestamp": 1749567310385,
+      "txHash": "0x4898143b027aa6f9a71d02c055635f0054b7aa50ce02a01da4f7f60d86c4a0b8"
+    }
+  }
+]

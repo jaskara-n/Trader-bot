@@ -4,6 +4,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { prepareAgentkitAndWalletProvider } from "./prepare-agentkit";
+import { getTransactions } from "@/app/utils/transactionStore";
 
 /**
  * Agent Configuration Guide
@@ -58,6 +59,16 @@ export async function createAgent(): Promise<
       walletProvider.getNetwork().networkId == "base-sepolia";
     const faucetMessage = `If you ever need funds, you can request them from the faucet.`;
     const cantUseFaucetMessage = `If you need funds, you can provide your wallet details and request funds from the user.`;
+    const transactionHistory = getTransactions();
+    const transactionSummary = transactionHistory
+      .map(
+        tx =>
+          `${tx.type}: ${tx.details.tokens?.join('/')} at ${new Date(
+            tx.details.timestamp
+          ).toLocaleDateString()}`
+      )
+      .join('\n');
+
     agent = createReactAgent({
       llm,
       tools,
@@ -73,6 +84,11 @@ export async function createAgent(): Promise<
         encourage them to implement it themselves using the CDP SDK + Agentkit, recommend they go to 
         docs.cdp.coinbase.com for more information. Be concise and helpful with your responses. Refrain from 
         restating your tools' descriptions unless it is explicitly requested.
+
+        You have access to transaction history:
+        ${transactionSummary || 'No transaction history yet'}
+        
+        When asked about transaction patterns, trends, or recommendations, analyze this history to provide insights.
         `,
     });
 

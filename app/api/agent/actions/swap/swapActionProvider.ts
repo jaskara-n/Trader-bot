@@ -21,6 +21,8 @@ import {
 } from "viem";
 import { baseSepolia } from "viem/chains";
 import { TRADE_HANDLER_ABI } from "./types";
+import { recordTransaction } from "@/app/utils/transactionStore";
+import { Transaction } from "@/app/types/transactions";
 import { TOKEN_ADDRESSES, CONTRACT_ADDRESSES, POOL_CONFIGS, type PoolKey } from "./config";
 
 // ERC20 ABI for approvals
@@ -251,8 +253,22 @@ class SwapActionProvider extends ActionProvider {
       // Use the actual transaction hash from the receipt
       const actualTxHash = receipt.transactionHash;
       console.log(`Actual transaction hash: ${actualTxHash}`);
+        const txRecord: Transaction = {
+        id: `swap-${Date.now()}`,
+        wallet: walletAddress,
+        type: 'swap',
+        details: {
+          tokens: [tokenIn, tokenOut],
+          amounts: [amountIn, minAmountOut],
+          timestamp: Date.now(),
+          txHash: actualTxHash,
+        }
+      };
+      
+      recordTransaction(txRecord);
 
       return `Successfully swapped ${amountIn} ${tokenIn} for ${tokenOut}. Transaction hash: ${actualTxHash}`;
+
     } catch (error: unknown) {
       console.error("Error in swap:", error);
       throw new Error(`Swap failed: ${error instanceof Error ? error.message : String(error)}`);
