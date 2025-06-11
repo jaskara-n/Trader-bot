@@ -1,67 +1,206 @@
-# Onchain Agent Powered by AgentKit
+# Automated Trading Agent with XMTP Integration
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with `create-onchain-agent`.  
+## Overview
 
-It integrates [AgentKit](https://github.com/coinbase/agentkit) to provide AI-driven interactions with on-chain capabilities.
+This project creates an AI-powered trading agent that automatically executes trades based on market opportunities. Built on Base with XMTP messaging, it enables:
+
+- Autonomous trading via AI agent with its own wallet
+- Secure communication between users and agent via XMTP
+- Uniswap v4 swaps, Compound staking, and DeFi Llama price feeds
+
+## System Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│                   XMTP Messaging                     │
+└──────────────────────────┬───────────────────────────┘
+                           │
+               ┌───────────▼───────────┐
+               │    Trading Agent      │
+               │                       │
+               │  ┌─────────────────┐  │
+               │  │    AI Engine    │  │
+               │  └────────┬────────┘  │
+               │           │           │
+               │  ┌────────▼────────┐  │
+               │  │ Agent Wallet    │  │
+               │  └────────┬────────┘  │
+               └───────────┼───────────┘
+                           │
+               ┌───────────▼───────────┐
+               │    Onchain Services    │
+               │                       │
+               │  ┌─────┐  ┌─────────┐ │
+               │  │Swap │  │ Staking │ │
+               │  └─────┘  └─────────┘ │
+               │        ┌─────┐        │
+               │        │Price│        │
+               │        └─────┘        │
+               └───────────────────────┘
+                           │
+               ┌───────────▼───────────┐
+               │        Base L2        │
+               └───────────────────────┘
+```
+
+## Key Components
+
+### 1. Trading Agent Core
+
+- **AI Engine**: Processes natural language commands via XMTP and converts to trading actions
+- **Wallet Integration**: Securely interacts with Coinbase Wallet for transaction signing
+- **Action Providers**: Modular system for different operations (swap, stake)
+
+### 2. Smart Contracts
+
+- **TradeHandlerV4**: Main contract handling Uniswap v4 operations
+  - Address: `0x00116c0965D08f284A50EcCbCB0bDDC7A9E75b08` (Base Sepolia)
+- **Staking**: Compound-based staking integration
+- **Price Feeds**: DeFi Llama oracle integration
+
+### 3. Messaging Layer
+
+- XMTP integration for secure, private messaging
+- Message parsing and command recognition
+- Transaction confirmation flows via chat
+
+## How It Works
+
+1. User deposits funds into agent's wallet and requests trading via XMTP
+2. AI Agent continuously monitors for opportunities using:
+   - DeFi Llama price feeds
+   - Market conditions analysis
+3. When opportunities are found:
+   - Agent calculates optimal trades (swaps/staking)
+   - Automatically executes transactions using its wallet
+4. All actions and confirmations are communicated via XMTP:
+   - Trade executions
+   - Portfolio updates
+   - Performance reports
+
+## Key Features
+
+1. **Autonomous Trading**: Agent executes trades automatically based on market conditions
+2. **Secure Communication**: All interactions via XMTP for end-to-end encrypted messaging
+3. **Onchain Operations**:
+   - Uniswap v4 swaps
+   - Compound staking
+   - DeFi Llama price feeds integration
+4. **Non-Custodial**: Users maintain control through their own wallets
+5. **Transparent**: All actions and results communicated via XMTP
+
+## Technical Documentation
+
+### Contracts
+
+Foundry-based smart contract development environment.
+
+#### Key Contracts:
+
+- `TradeHandlerV4.sol`: Main trading logic
+- Interfaces:
+  - `ITradeHandlerV4.sol`: Contract interface
+- Tests:
+  - `TradeHandlerV4Fork.t.sol`: Fork tests
+
+#### Deployment
+
+```shell
+forge script script/DeployTradeHandlerV4.s.sol --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
+
+### Agent API
+
+Next.js API routes for agent operations:
+
+- `/api/agent/create-agent`: Agent initialization
+- `/api/agent/actions/stake`: Staking operations
+
+#### Environment Variables
+
+Configure in `.env`:
+
+```env
+PRIVATE_KEY=0x...
+RPC_URL=https://sepolia.base.org
+CHAIN_ID=84532
+```
 
 ## Getting Started
 
-First, install dependencies:
+1. Install dependencies:
 
-```sh
+```bash
 npm install
+cd contracts && npm install
 ```
 
-Then, configure your environment variables:
+2. Configure environment:
 
-```sh
-mv .env.local .env
+```bash
+cp .env.example .env
+# Edit .env with your keys
 ```
 
-Run the development server:
+3. Run development server:
 
-```sh
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the project.
+4. Deploy contracts:
 
+```bash
+cd contracts
+forge build
+forge script script/DeployTradeHandlerV4.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
+```
 
-## Configuring Your Agent
+## Foundry (Original Documentation)
 
-You can [modify your configuration](https://github.com/coinbase/agentkit/tree/main/typescript/agentkit#usage) of the agent. By default, your agentkit configuration occurs in the `/api/agent/prepare-agentkit.ts` file, and agent instantiation occurs in the `/api/agent/create-agent.ts` file.
+**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
-### 1. Select Your LLM  
-Modify the OpenAI model instantiation to use the model of your choice.
+Foundry consists of:
 
-### 2. Select Your Wallet Provider  
-AgentKit requires a **Wallet Provider** to interact with blockchain networks.
+- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
+- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
+- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
+- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
 
-### 3. Select Your Action Providers  
-Action Providers define what your agent can do. You can use built-in providers or create your own.
+### Usage
 
----
+#### Build
 
-## Next Steps
+```shell
+$ forge build
+```
 
-- Explore the AgentKit README: [AgentKit Documentation](https://github.com/coinbase/agentkit)
-- Learn more about available Wallet Providers & Action Providers.
-- Experiment with custom Action Providers for your specific use case.
+#### Test
 
----
+```shell
+$ forge test
+```
 
-## Learn More
+#### Format
 
-- [Learn more about CDP](https://docs.cdp.coinbase.com/)
-- [Learn more about AgentKit](https://docs.cdp.coinbase.com/agentkit/docs/welcome)
-- [Learn more about Next.js](https://nextjs.org/docs)
-- [Learn more about Tailwind CSS](https://tailwindcss.com/docs)
+```shell
+$ forge fmt
+```
 
----
+#### Gas Snapshots
 
-## Contributing
+```shell
+$ forge snapshot
+```
 
-Interested in contributing to AgentKit? Follow the contribution guide:
+#### Deploy
 
-- [Contribution Guide](https://github.com/coinbase/agentkit/blob/main/CONTRIBUTING.md)
-- Join the discussion on [Discord](https://discord.gg/CDP)
+```shell
+$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
+
+### Deployments
+
+#### Base Sepolia
+
+- Trade handler v4: `0x00116c0965D08f284A50EcCbCB0bDDC7A9E75b08`
