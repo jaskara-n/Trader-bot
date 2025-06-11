@@ -4,7 +4,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { prepareAgentkitAndWalletProvider } from "./prepare-agentkit";
-
+import { getAllTransactions } from "@/app/utils/transactionInsights";
 /**
  * Agent Configuration Guide
  *
@@ -46,7 +46,8 @@ export async function createAgent(): Promise<
   try {
     const { agentkit, walletProvider } =
       await prepareAgentkitAndWalletProvider();
-
+    const allTransactions = await getAllTransactions();
+    const transactionsContext = JSON.stringify(allTransactions, null, 2);
     // Initialize LLM: https://platform.openai.com/docs/models#gpt-4o
     const llm = new ChatDeepSeek({ model: "deepseek-chat" });
 
@@ -75,6 +76,14 @@ export async function createAgent(): Promise<
         docs.cdp.coinbase.com for more information. Be concise and helpful with your responses. Refrain from 
         restating your tools' descriptions unless it is explicitly requested.
         
+        --- BEGIN TRANSACTION DATA ---
+        ${transactionsContext}
+        --- END TRANSACTION DATA ---
+
+        If the user asks questions about stake activity, swap recommendations, or requests insights 
+        based on previous activity, analyze the above context and provide relevant, data-backed answers.
+        Be concise and helpful with your responses.
+
         When asked about transaction patterns, trends, or recommendations, analyze these conversation and transaction history
        to provide insights.
         `,

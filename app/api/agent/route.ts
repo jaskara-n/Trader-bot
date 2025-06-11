@@ -1,4 +1,3 @@
-// F:\Trader-bot\app\api\agent\route.ts
 import { AgentRequest, AgentResponse } from "@/app/types/api";
 import { NextResponse } from "next/server";
 import { createAgent } from "./create-agent";
