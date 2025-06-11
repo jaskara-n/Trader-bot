@@ -2,6 +2,7 @@
 import { AgentRequest, AgentResponse } from "@/app/types/api";
 import { NextResponse } from "next/server";
 import { createAgent } from "./create-agent";
+import { recordConversationLog } from "@/app/utils/conversationLogger";
 
 // Initialize XMTP in background (non-blocking)
 async function initializeXmtp() {
@@ -27,17 +28,24 @@ export async function POST(
     const { userMessage } = await req.json();
     const agent = await createAgent();
 
+    let agentResponse = "";
     const stream = await agent.stream(
       { messages: [{ content: userMessage, role: "user" }] },
       { configurable: { thread_id: "AgentKit Discussion" } }
     );
-
-    let agentResponse = "";
     for await (const chunk of stream) {
       if ("agent" in chunk) {
         agentResponse += chunk.agent.messages[0].content;
       }
     }
+
+    // Log user input and response
+    recordConversationLog({
+      id: `conv-${Date.now()}`,
+      timestamp: Date.now(),
+      userInput: userMessage,
+      response: agentResponse,
+    });
 
     return NextResponse.json({ response: agentResponse });
   } catch (error) {

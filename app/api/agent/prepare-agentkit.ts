@@ -123,7 +123,6 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
       walletProvider,
       actionProviders,
     });
-    console.log("AgentKit initialized successfully", agentkit);
 
     return { agentkit, walletProvider };
   } catch (error) {
