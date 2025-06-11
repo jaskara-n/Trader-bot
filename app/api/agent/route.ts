@@ -1,10 +1,17 @@
 // app/api/agent/route.ts
-import { AgentRequest, AgentResponse, StreamEvent, StreamMessageType, AgentStreamResponse, SwapStatusStreamResponse } from "@/app/types/api";
+import { AgentRequest, StreamEvent, StreamMessageType, AgentStreamResponse, SwapStatusStreamResponse, DetailedStatusStreamResponse } from "@/app/types/api";
 import { NextResponse } from "next/server";
 import { createAgent } from "./create-agent";
-import { swapActionProvider } from "./actions/swap"; // Correct import for the instance creator
+import { swapActionProvider } from "./actions/swap";
+import { recordStakeConversation } from "@/app/utils/transactionStore";
 
-// Initialize XMTP in background (non-blocking)
+// Helper: Detect stake with amount (stake 1, stake 2 ETH, etc.)
+function isStakeWithAmount(message: string): boolean {
+  const stakeRegex = /\bstake\b\s+([\d,.]+)\s*\w*/i;
+  return stakeRegex.test(message);
+}
+
+// (Optional: Keep this if you need XMTP background init)
 async function initializeXmtp() {
   try {
     await fetch(
@@ -14,13 +21,8 @@ async function initializeXmtp() {
     console.log("XMTP initialization in progress...");
   }
 }
-
-// Call this once when server starts
 initializeXmtp();
 
-/**
- * Original HTTP endpoint - works as before
- */
 export async function POST(
   req: Request & { json: () => Promise<AgentRequest> }
 ): Promise<NextResponse> {
@@ -57,6 +59,7 @@ export async function POST(
           }
         );
 
+        let agentResponse = ""; // Accumulate agent response here for recordStakeConversation
         const agentStream = await agent.stream(
           { messages: [{ content: userMessage, role: "user" }] },
           { configurable: { thread_id: "AgentKit Discussion" } }
@@ -64,13 +67,21 @@ export async function POST(
 
         for await (const chunk of agentStream) {
           if ("agent" in chunk) {
-            const agentResponse: AgentStreamResponse = {
+            const content = chunk.agent.messages[0].content;
+            agentResponse += content; // Accumulate content
+            const agentStreamResponse: AgentStreamResponse = {
               type: StreamMessageType.AGENT_RESPONSE,
-              content: chunk.agent.messages[0].content,
+              content: content,
             };
-            sendEvent(agentResponse);
+            sendEvent(agentStreamResponse);
           }
         }
+
+        // Only for staking commands with amount, log conversation (without wallet)
+        if (isStakeWithAmount(userMessage)) {
+          await recordStakeConversation(userMessage, agentResponse);
+        }
+
         controller.close();
       },
       cancel() {
@@ -90,3 +101,4 @@ export async function POST(
     return NextResponse.json({ error: "Failed to process message" }, { status: 500 });
   }
 }
+
