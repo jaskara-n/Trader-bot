@@ -249,7 +249,6 @@ class SwapActionProvider extends ActionProvider {
       // Record transaction with actual amounts
       const txRecord: Transaction = {
         id: `swap-${Date.now()}`,
-        wallet: walletAddress,
         type: 'swap',
         details: {
           tokens: [tokenIn, tokenOut],
@@ -272,7 +271,7 @@ class SwapActionProvider extends ActionProvider {
         }
       };
       
-      recordTransaction(txRecord);
+      await recordTransaction(walletAddress, txRecord);
 
       return `Successfully swapped ${formatUnits(actualInputAmount, 18)} ${tokenIn} for ${formatUnits(actualOutputAmount, 18)} ${tokenOut}. Transaction hash: ${actualTxHash}`;
     } catch (error: unknown) {

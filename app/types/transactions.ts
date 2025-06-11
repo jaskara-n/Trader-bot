@@ -5,7 +5,6 @@ export interface TokenBalances {
 
 export interface Transaction {
   id: string;
-  wallet: string;
   type: 'swap' | 'stake';
   details: {
     tokens?: string[];

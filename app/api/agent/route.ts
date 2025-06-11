@@ -2,7 +2,7 @@
 import { AgentRequest, AgentResponse } from "@/app/types/api";
 import { NextResponse } from "next/server";
 import { createAgent } from "./create-agent";
-import { recordConversationLog } from "@/app/utils/conversationLogger";
+// import { recordConversation} from "@/app/utils/conversationLogger";
 
 // Initialize XMTP in background (non-blocking)
 async function initializeXmtp() {
@@ -21,11 +21,12 @@ initializeXmtp();
 /**
  * Original HTTP endpoint - works as before
  */
+
 export async function POST(
   req: Request & { json: () => Promise<AgentRequest> }
 ): Promise<NextResponse<AgentResponse>> {
   try {
-    const { userMessage } = await req.json();
+    const { userMessage} = await req.json(); 
     const agent = await createAgent();
 
     let agentResponse = "";
@@ -39,13 +40,13 @@ export async function POST(
       }
     }
 
-    // Log user input and response
-    recordConversationLog({
-      id: `conv-${Date.now()}`,
-      timestamp: Date.now(),
-      userInput: userMessage,
-      response: agentResponse,
-    });
+    // const safeWallet = wallet?.toLowerCase();
+
+    // await recordConversation(safeWallet, {
+    //   userInput: userMessage,
+    //   response: agentResponse,
+    //   timestamp: Date.now(),
+    // });
 
     return NextResponse.json({ response: agentResponse });
   } catch (error) {

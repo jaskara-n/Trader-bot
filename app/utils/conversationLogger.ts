@@ -1,17 +1,23 @@
-import connectDB from "./mongo";
-import TraderBotEntry from "@/app/models/TraderBotEntry";
+import connectDB from "./db";
+import WalletData from "@/app/models/WalletData";
 
-export interface ConversationLogEntry {
-  id: string;
-  timestamp: number;
+export interface ConversationEntry {
   userInput: string;
   response: string;
+  timestamp: number;
 }
 
-export async function recordConversationLog(entry: ConversationLogEntry): Promise<void> {
+export async function recordConversation(wallet: string, entry: ConversationEntry): Promise<void> {
   await connectDB();
-  await TraderBotEntry.create({
-    ...entry,
-    type: "conversation",
-  });
+  await WalletData.findOneAndUpdate(
+    { wallet },
+    { $push: { conversations: entry } },
+    { upsert: true, new: true }
+  );
+}
+
+export async function getConversations(wallet: string): Promise<ConversationEntry[]> {
+  await connectDB();
+  const doc = await WalletData.findOne({ wallet });
+  return doc?.conversations || [];
 }

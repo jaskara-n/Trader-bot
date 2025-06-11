@@ -1,40 +1,19 @@
-import fs from 'fs';
-import path from 'path';
-import { Transaction } from "@/app/types/transactions";
+import connectDB from './db';
+import WalletData, { WalletDataDoc } from '@/app/models/WalletData';
+import type { Transaction } from '@/app/types/transactions';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR);
-  }
-}
-
-export function recordTransaction(tx: Transaction): void {
-  ensureDataDir();
-
-  const transactions = getTransactions();
-  transactions.push(tx);
-
-  fs.writeFileSync(
-    TRANSACTIONS_FILE,
-    JSON.stringify(transactions, null, 2)
+export async function recordTransaction(wallet: string, tx: Transaction): Promise<void> {
+  if (!wallet) throw new Error("Wallet address is required for logging transaction");
+  await connectDB();
+  await WalletData.findOneAndUpdate(
+    { wallet },
+    { $push: { transactions: tx } },
+    { upsert: true, new: true }
   );
 }
 
-export function getTransactions(): Transaction[] {
-  ensureDataDir();
-
-  if (!fs.existsSync(TRANSACTIONS_FILE)) {
-    return [];
-  }
-
-  try {
-    const data = fs.readFileSync(TRANSACTIONS_FILE, 'utf8');
-    return JSON.parse(data) as Transaction[];
-  } catch (e) {
-    console.error('Error reading transactions file', e);
-    return [];
-  }
+export async function getTransactions(wallet: string): Promise<Transaction[]> {
+  await connectDB();
+  const data: WalletDataDoc | null = await WalletData.findOne({ wallet });
+  return data?.transactions || [];
 }

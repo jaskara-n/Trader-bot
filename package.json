@@ -32,8 +32,8 @@
     "react-dom": "^18",
     "react-markdown": "^10.0.0",
     "solmate": "github:transmissions11/solmate",
-    "viem": "^2.24.1",
-    "wagmi": "^2.11.0"
+    "viem": "^2.31.0",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
     "@types/node": "^20",
