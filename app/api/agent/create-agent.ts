@@ -4,7 +4,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { prepareAgentkitAndWalletProvider } from "./prepare-agentkit";
-
+import { getAllTransactions } from "@/app/utils/transactionInsights";
 /**
  * Agent Configuration Guide
  *
@@ -46,7 +46,8 @@ export async function createAgent(): Promise<
   try {
     const { agentkit, walletProvider } =
       await prepareAgentkitAndWalletProvider();
-
+    const allTransactions = await getAllTransactions();
+    const transactionsContext = JSON.stringify(allTransactions, null, 2);
     // Initialize LLM: https://platform.openai.com/docs/models#gpt-4o
     const llm = new ChatDeepSeek({ model: "deepseek-chat" });
 
@@ -57,7 +58,8 @@ export async function createAgent(): Promise<
     const canUseFaucet =
       walletProvider.getNetwork().networkId == "base-sepolia";
     const faucetMessage = `If you ever need funds, you can request them from the faucet.`;
-    const cantUseFaucetMessage = `If you need funds, you can provide your wallet details and request funds from the user.`;
+    const cantUseFaucetMessage = `If you need funds, you can provide your wallet details and request funds from the user.`
+
     agent = createReactAgent({
       llm,
       tools,
@@ -73,6 +75,17 @@ export async function createAgent(): Promise<
         encourage them to implement it themselves using the CDP SDK + Agentkit, recommend they go to 
         docs.cdp.coinbase.com for more information. Be concise and helpful with your responses. Refrain from 
         restating your tools' descriptions unless it is explicitly requested.
+        
+        --- BEGIN TRANSACTION DATA ---
+        ${transactionsContext}
+        --- END TRANSACTION DATA ---
+
+        If the user asks questions about stake activity, swap recommendations, or requests insights 
+        based on previous activity, analyze the above context and provide relevant, data-backed answers.
+        Be concise and helpful with your responses.
+
+        When asked about transaction patterns, trends, or recommendations, analyze these conversation and transaction history
+       to provide insights.
         `,
     });
 

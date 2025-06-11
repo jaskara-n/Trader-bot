@@ -101,11 +101,11 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
 
     // Initialize AgentKit: https://docs.cdp.coinbase.com/agentkit/docs/agent-actions
     const actionProviders: ActionProvider[] = [
+      stakeActionProvider(), 
       wethActionProvider(),
       pythActionProvider(),
       walletActionProvider(),
       erc20ActionProvider(),
-      stakeActionProvider(),
       swapActionProvider(),
       compoundActionProvider(),
     ];
