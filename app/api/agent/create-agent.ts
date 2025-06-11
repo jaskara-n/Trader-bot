@@ -4,6 +4,8 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { prepareAgentkitAndWalletProvider } from "./prepare-agentkit";
+import { AgentKit } from "@coinbase/agentkit";
+import { swapActionProvider } from "./actions/swap";
 
 /**
  * Agent Configuration Guide
@@ -23,6 +25,8 @@ import { prepareAgentkitAndWalletProvider } from "./prepare-agentkit";
 
 // The agent
 let agent: ReturnType<typeof createReactAgent>;
+let cachedAgentKit: AgentKit | null = null;
+let cachedSwapActionProvider: ReturnType<typeof swapActionProvider> | null = null;
 
 /**
  * Initializes and returns an instance of the AI agent.
@@ -35,17 +39,26 @@ let agent: ReturnType<typeof createReactAgent>;
  *
  * @throws {Error} If the agent initialization fails.
  */
-export async function createAgent(): Promise<
-  ReturnType<typeof createReactAgent>
-> {
+export async function createAgent(
+  statusCallback?: (status: string) => void
+): Promise<{
+  agent: ReturnType<typeof createReactAgent>;
+  agentkit: AgentKit;
+  swapActionProviderInstance: ReturnType<typeof swapActionProvider>;
+}> {
   // If agent has already been initialized, return it
-  if (agent) {
-    return agent;
+  if (agent && cachedAgentKit && cachedSwapActionProvider) {
+    if (statusCallback) {
+      cachedSwapActionProvider.setStatusCallback(statusCallback);
+    }
+    return { agent, agentkit: cachedAgentKit, swapActionProviderInstance: cachedSwapActionProvider };
   }
 
   try {
-    const { agentkit, walletProvider } =
-      await prepareAgentkitAndWalletProvider();
+    const { agentkit, walletProvider, swapActionProviderInstance } =
+      await prepareAgentkitAndWalletProvider(statusCallback);
+    cachedAgentKit = agentkit;
+    cachedSwapActionProvider = swapActionProviderInstance;
 
     // Initialize LLM: https://platform.openai.com/docs/models#gpt-4o
     const llm = new ChatDeepSeek({ model: "deepseek-chat" });
@@ -76,7 +89,7 @@ export async function createAgent(): Promise<
         `,
     });
 
-    return agent;
+    return { agent, agentkit, swapActionProviderInstance };
   } catch (error) {
     console.error("Error initializing agent:", error);
     throw new Error("Failed to initialize agent");

@@ -55,26 +55,40 @@ const ERC20_ABI = [
 ] as const;
 
 class SwapActionProvider extends ActionProvider {
-  private publicClient: PublicClient;
+  private publicClient: PublicClient<Transport, typeof baseSepolia>;
+  private statusCallback: ((status: string, isDetailed?: boolean) => void) | null = null;
 
-  constructor() {
+  constructor(statusCallback?: (status: string, isDetailed?: boolean) => void) {
     super("swap-action-provider", []);
+    if (statusCallback) {
+      this.statusCallback = statusCallback;
+    }
     this.publicClient = createPublicClient({
       chain: baseSepolia,
       transport: http(),
       batch: {
         multicall: true,
       },
-    }) as PublicClient;
+    }) as PublicClient<Transport, typeof baseSepolia>;
+  }
+
+  setStatusCallback(callback: (status: string, isDetailed?: boolean) => void) {
+    this.statusCallback = callback;
+  }
+
+  private updateStatus(status: string, isDetailed: boolean = false) {
+    if (this.statusCallback) {
+      this.statusCallback(status, isDetailed);
+    }
   }
 
   private async verifyTransaction(
     hash: Hash,
     expectedStatus: "success" | "reverted" = "success"
   ): Promise<TransactionReceipt> {
-    console.log(`Waiting for transaction ${hash}...`);
+    this.updateStatus(`Waiting for transaction ${hash}...`, true);
     const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
-    console.log(`Transaction status: ${receipt.status === "success" ? "success" : "failed"}`);
+    this.updateStatus(`Transaction status: ${receipt.status === "success" ? "success" : "failed"}`, true);
     
     if (receipt.status !== expectedStatus) {
       throw new Error(`Transaction ${expectedStatus === "success" ? "failed" : "succeeded"} unexpectedly. Hash: ${hash}`);
@@ -84,6 +98,7 @@ class SwapActionProvider extends ActionProvider {
   }
 
   private async getTokenBalance(tokenAddress: Address, walletAddress: Address): Promise<bigint> {
+    this.updateStatus(`Fetching balance for ${tokenAddress}...`, true);
     const balance = await this.publicClient.readContract({
       address: tokenAddress,
       abi: ERC20_ABI,
@@ -99,9 +114,10 @@ class SwapActionProvider extends ActionProvider {
     spenderAddress: Address,
     amount: bigint
   ): Promise<void> {
+    this.updateStatus("Checking token approval..."); // Main status
+    this.updateStatus(`Checking allowance for token ${tokenAddress}...`, true);
     try {
       const walletAddress = wallet.getAddress() as Address;
-      console.log(`Checking allowance for token ${tokenAddress}...`);
       
       // Check current allowance
       const currentAllowance = await this.publicClient.readContract({
@@ -111,15 +127,17 @@ class SwapActionProvider extends ActionProvider {
         args: [walletAddress, spenderAddress],
       }) as bigint;
 
-      console.log(`Current allowance: ${formatUnits(currentAllowance, 18)}`);
+      this.updateStatus(`Current allowance: ${formatUnits(currentAllowance, 18)}`, true);
 
       // If allowance is sufficient, no need to approve
       if (currentAllowance >= amount) {
-        console.log("Token already approved");
+        this.updateStatus("Token already approved", true);
+        this.updateStatus("Token approved successfully"); // Main status
         return;
       }
 
-      console.log(`Approving token ${tokenAddress} for amount ${formatUnits(amount, 18)}...`);
+      this.updateStatus("Approving token..."); // Main status
+      this.updateStatus("Preparing approval transaction...", true);
       
       // Approve token
       const approveData = encodeFunctionData({
@@ -133,7 +151,7 @@ class SwapActionProvider extends ActionProvider {
         data: approveData,
       });
 
-      console.log(`Approval transaction sent: ${hash}`);
+      this.updateStatus(`Approval transaction sent: ${hash}`, true);
 
       // Wait for approval transaction and verify it succeeded
       await this.verifyTransaction(hash as Hash);
@@ -150,7 +168,7 @@ class SwapActionProvider extends ActionProvider {
         throw new Error(`Approval failed. New allowance (${formatUnits(newAllowance, 18)}) is less than required amount (${formatUnits(amount, 18)})`);
       }
 
-      console.log("Token approval successful");
+      this.updateStatus("Token approved successfully"); // Main status
     } catch (error) {
       console.error("Error in token approval:", error);
       throw new Error(`Failed to approve token: ${error instanceof Error ? error.message : String(error)}`);
@@ -166,9 +184,10 @@ class SwapActionProvider extends ActionProvider {
     wallet: ViemWalletProvider,
     args: z.infer<typeof swapActionSchema>
   ): Promise<string> {
+    this.updateStatus("Initializing swap...");
     console.log("Swap action triggered");
     const walletAddress = wallet.getAddress() as Address;
-    console.log("Wallet address:", walletAddress);
+    this.updateStatus(`Wallet address: ${walletAddress}`, true);
 
     const { tokenIn, tokenOut, amountIn, minAmountOut, fee = 3000 } = args;
     let approvalTxHash: Hash | undefined;
@@ -179,12 +198,12 @@ class SwapActionProvider extends ActionProvider {
       const tokenInAddress = TOKEN_ADDRESSES[tokenIn];
       const tokenOutAddress = TOKEN_ADDRESSES[tokenOut];
 
-      console.log(`Swapping ${amountIn} ${tokenIn} for ${tokenOut}`);
-      console.log(`Token addresses - In: ${tokenInAddress}, Out: ${tokenOutAddress}`);
+      this.updateStatus(`Swapping ${amountIn} ${tokenIn} for ${tokenOut}`); // Main status
+      this.updateStatus(`Token addresses - In: ${tokenInAddress}, Out: ${tokenOutAddress}`, true);
 
       // Check token balances before swap
       const balanceBefore = await this.getTokenBalance(tokenInAddress, walletAddress);
-      console.log(`Balance before swap: ${formatUnits(balanceBefore, 18)} ${tokenIn}`);
+      this.updateStatus(`Balance before swap: ${formatUnits(balanceBefore, 18)} ${tokenIn}`, true);
 
       const amountInParsed = parseUnits(amountIn, 18);
       if (balanceBefore < amountInParsed) {
@@ -199,10 +218,11 @@ class SwapActionProvider extends ActionProvider {
 
       // Determine swap direction
       const zeroForOne = tokenIn === "USDC";
-      console.log(`Swap direction: ${zeroForOne ? "USDC to UNI" : "UNI to USDC"}`);
+      this.updateStatus(`Swap direction: ${zeroForOne ? "USDC to UNI" : "UNI to USDC"}`, true);
 
       // Approve token before swap
       try {
+        this.updateStatus("Preparing token approval..."); // Main status
         const approvalData = encodeFunctionData({
           abi: ERC20_ABI,
           functionName: "approve",
@@ -214,9 +234,9 @@ class SwapActionProvider extends ActionProvider {
           data: approvalData,
         }) as Hash;
 
-        console.log(`Approval transaction sent: ${approvalTxHash}`);
-        await this.verifyTransaction(approvalTxHash);
-        console.log("Token approval successful");
+        this.updateStatus(`Approval transaction sent: ${approvalTxHash}`, true);
+        await this.verifyTransaction(approvalTxHash, "success");
+        this.updateStatus("Token approval successful"); // Main status
       } catch (error) {
         console.error("Error in approval:", error);
         throw new Error(`Token approval failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -236,32 +256,29 @@ class SwapActionProvider extends ActionProvider {
         ],
       });
 
-      console.log("Sending swap transaction...");
+      this.updateStatus("Sending swap transaction..."); // Main status
       // Use wallet's sendTransaction method
       swapTxHash = await wallet.sendTransaction({
         to: CONTRACT_ADDRESSES.TRADE_HANDLER,
         data: data,
       }) as Hash;
 
-      console.log(`Swap transaction sent: ${swapTxHash}`);
+      this.updateStatus(`Swap transaction sent: ${swapTxHash}`, true);
+      await this.verifyTransaction(swapTxHash, "success");
 
-      // Wait for transaction and verify it succeeded
-      const receipt = await this.verifyTransaction(swapTxHash);
-
-      // Verify the swap actually happened by checking balances
       const balanceAfter = await this.getTokenBalance(tokenInAddress, walletAddress);
-      console.log(`Balance after swap: ${formatUnits(balanceAfter, 18)} ${tokenIn}`);
+      this.updateStatus(`Balance after swap: ${formatUnits(balanceAfter, 18)} ${tokenIn}`, true);
 
       if (balanceAfter >= balanceBefore) {
         throw new Error(`Swap transaction succeeded but token balance did not decrease. Before: ${formatUnits(balanceBefore, 18)}, After: ${formatUnits(balanceAfter, 18)}`);
       }
 
       const balanceChange = balanceBefore - balanceAfter;
-      console.log(`Balance change: ${formatUnits(balanceChange, 18)} ${tokenIn}`);
+      this.updateStatus(`Balance change: ${formatUnits(balanceChange, 18)} ${tokenIn}`, true);
 
       // Check if we received the output token
       const outputBalance = await this.getTokenBalance(tokenOutAddress, walletAddress);
-      console.log(`Output token balance: ${formatUnits(outputBalance, 18)} ${tokenOut}`);
+      this.updateStatus(`Output token balance: ${formatUnits(outputBalance, 18)} ${tokenOut}`, true);
 
       // Construct response with transaction hashes and network information
       const response = {
@@ -285,37 +302,19 @@ class SwapActionProvider extends ActionProvider {
       };
 
       // Return a formatted string that includes all transaction hashes and network info
+      this.updateStatus("Swap completed successfully!"); // Main status
       return JSON.stringify(response);
     } catch (error: unknown) {
-      console.error("Error in swap:", error);
-      const errorResponse = {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        network: {
-          name: "Base Sepolia",
-          chainId: baseSepolia.id,
-          explorer: "https://base-sepolia.blockscout.com/tx/"
-        },
-        transactions: {
-          approval: approvalTxHash ? {
-            hash: approvalTxHash,
-            url: `https://base-sepolia.blockscout.com/tx/${approvalTxHash}`
-          } : undefined,
-          swap: swapTxHash ? {
-            hash: swapTxHash,
-            url: `https://base-sepolia.blockscout.com/tx/${swapTxHash}`
-          } : undefined
-        }
-      };
-      throw new Error(JSON.stringify(errorResponse));
+      console.error("Error in swap action:", error);
+      throw new Error(`Failed to perform swap: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   supportsNetwork(network: Network): boolean {
-    return true;
+    return network.networkId === "base-sepolia";
   }
 }
 
-export const swapActionProvider = () => {
-  return new SwapActionProvider();
+export const swapActionProvider = (statusCallback?: (status: string, isDetailed?: boolean) => void) => {
+  return new SwapActionProvider(statusCallback);
 };

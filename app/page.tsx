@@ -11,7 +11,7 @@ import ReactMarkdown from "react-markdown";
  */
 export default function Home() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, isThinking } = useAgent();
+  const { messages, sendMessage, isThinking, swapStatus, detailedSwapLogs } = useAgent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Function to scroll to the bottom
@@ -38,6 +38,16 @@ export default function Home() {
         <div className="p-4 border-b border-gray-800">
           <h1 className="text-xl font-semibold text-white">Hooman</h1>
         </div>
+
+        {/* Status Bar */}
+        {swapStatus && (
+          <div className="px-4 py-2 bg-[#2A2A2A] border-b border-gray-800">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+              <span className="text-gray-300">{swapStatus}</span>
+            </div>
+          </div>
+        )}
 
         {/* Chat Messages */}
         <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
@@ -87,9 +97,17 @@ export default function Home() {
 
           {/* Thinking Indicator */}
           {isThinking && (
-            <div className="flex items-center space-x-2 text-gray-400 ml-4">
-              <span>Thinking</span>
-              <span className="flex space-x-1">
+            <div className="flex flex-col items-start space-y-2 text-gray-400 ml-4">
+              {detailedSwapLogs.length > 0 ? (
+                <div className="w-full max-h-48 overflow-y-auto bg-[#2A2A2A] rounded-md p-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                  {detailedSwapLogs.map((log, logIndex) => (
+                    <p key={logIndex} className="text-sm text-gray-300">{log}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400">{swapStatus || "Thinking"}</p>
+              )}
+              <span className="flex space-x-1 mt-2">
                 <span
                   className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
                   style={{ animationDelay: "0ms" }}
