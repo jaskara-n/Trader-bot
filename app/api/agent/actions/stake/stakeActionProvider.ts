@@ -3,8 +3,6 @@ import { ActionProvider, CreateAction, Network } from "@coinbase/agentkit";
 import type { z } from "zod";
 import fs from "fs";
 import path from "path";
-import { recordTransaction } from "@/app/utils/transactionStore";
-import { Transaction } from "@/app/types/transactions";
 import { swapActionSchema } from "./schema";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import {
@@ -79,18 +77,6 @@ class SwapActionProvider extends ActionProvider {
       //     stakeableBalance: stakeableBalanceNum,
       //   },
       // };
-      const txRecord: Transaction = {
-        id: `stake-${Date.now()}`,
-        wallet: wallet.getAddress(),
-        type: 'stake',
-        details: {
-          tokens: [token],
-          timestamp: Date.now(),
-        }
-      };
-      
-      recordTransaction(txRecord);
-      return "Staking action completed successfully.";
     } catch (error: unknown) {
       console.error("Error in staking:", error);
     }

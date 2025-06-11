@@ -59,5 +59,32 @@
       "timestamp": 1749576292131,
       "txHash": "0xa7e2daea735b724f2ecdb074c4f2935c5c0ecdcd96f0a8fb087f8f788f46ed04"
     }
+  },
+  {
+    "id": "swap-1749585463929",
+    "wallet": "0xb31fE911B5dB22fBa49b362496c66DDa5Bce35B6",
+    "type": "swap",
+    "details": {
+      "tokens": [
+        "USDC",
+        "UNI"
+      ],
+      "amounts": [
+        "100",
+        "29.906000632122492019"
+      ],
+      "balances": {
+        "before": {
+          "USDC": "6917.048236551200848125",
+          "UNI": "12577.435025564085940104"
+        },
+        "after": {
+          "USDC": "6817.048236551200848125",
+          "UNI": "12607.341026196208432123"
+        }
+      },
+      "timestamp": 1749585463929,
+      "txHash": "0xbe995b7db730699d58288d827d932c431f3f627c05c6da0a77c27bc725690fda"
+    }
   }
 ]
