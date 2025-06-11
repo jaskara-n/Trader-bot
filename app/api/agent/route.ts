@@ -1,10 +1,16 @@
-// app/api/agent/route.ts
+// F:\Trader-bot\app\api\agent\route.ts
 import { AgentRequest, AgentResponse } from "@/app/types/api";
 import { NextResponse } from "next/server";
 import { createAgent } from "./create-agent";
-// import { recordConversation} from "@/app/utils/conversationLogger";
+import { recordStakeConversation } from "@/app/utils/transactionStore";
 
-// Initialize XMTP in background (non-blocking)
+// Helper: Detect stake with amount (stake 1, stake 2 ETH, etc.)
+function isStakeWithAmount(message: string): boolean {
+  const stakeRegex = /\bstake\b\s+([\d,.]+)\s*\w*/i;
+  return stakeRegex.test(message);
+}
+
+// (Optional: Keep this if you need XMTP background init)
 async function initializeXmtp() {
   try {
     await fetch(
@@ -14,19 +20,13 @@ async function initializeXmtp() {
     console.log("XMTP initialization in progress...");
   }
 }
-
-// Call this once when server starts
 initializeXmtp();
-
-/**
- * Original HTTP endpoint - works as before
- */
 
 export async function POST(
   req: Request & { json: () => Promise<AgentRequest> }
 ): Promise<NextResponse<AgentResponse>> {
   try {
-    const { userMessage} = await req.json(); 
+    const { userMessage } = await req.json();
     const agent = await createAgent();
 
     let agentResponse = "";
@@ -40,13 +40,10 @@ export async function POST(
       }
     }
 
-    // const safeWallet = wallet?.toLowerCase();
-
-    // await recordConversation(safeWallet, {
-    //   userInput: userMessage,
-    //   response: agentResponse,
-    //   timestamp: Date.now(),
-    // });
+    // Only for staking commands with amount, log conversation (without wallet)
+    if (isStakeWithAmount(userMessage)) {
+      await recordStakeConversation(userMessage, agentResponse);
+    }
 
     return NextResponse.json({ response: agentResponse });
   } catch (error) {

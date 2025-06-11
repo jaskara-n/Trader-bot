@@ -3,9 +3,10 @@ export interface TokenBalances {
   after: Record<string, string>;
 }
 
-export interface Transaction {
+// Swap transaction (current)
+export interface SwapTransaction {
   id: string;
-  type: 'swap' | 'stake';
+  type: 'swap';
   details: {
     tokens?: string[];
     amounts?: string[];
@@ -14,3 +15,17 @@ export interface Transaction {
     txHash?: string;
   };
 }
+
+// Staking conversation entry (new!)
+export interface StakeConversationTransaction {
+  id: string;
+  type: 'stake';
+  details: {
+    userInput: string;
+    response: string;
+    timestamp: number;
+  };
+}
+
+// Union type (for Mongo schema)
+export type Transaction = SwapTransaction | StakeConversationTransaction;
