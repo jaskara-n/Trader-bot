@@ -13,6 +13,7 @@ export interface SwapTransaction {
     balances?: TokenBalances;
     timestamp: number;
     txHash?: string;
+    status?: string;
   };
 }
 
