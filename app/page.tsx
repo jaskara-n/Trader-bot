@@ -58,8 +58,12 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center w-full h-full min-h-screen bg-[#121212]">
       {/* Project Logo and HooMind text in the top-left corner */}
       <div className="absolute top-4 left-4 flex items-center space-x-2">
-        <img src="/logo.png" alt="HooMind Logo" className="h-8 w-8 object-contain" />
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">HooMind</h1>
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="HooMind Logo" className="w-8 h-8" />
+          <span className="text-white text-3xl font-extrabold tracking-tight">
+            <span className="text-[#8b5cf6]">H</span>oo<span className="text-[#8b5cf6]">M</span>ind
+          </span>
+        </div>
       </div>
 
       {/* Main container to hold the LLM logo, chat interface, and user logo side-by-side */}
