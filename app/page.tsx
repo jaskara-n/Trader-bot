@@ -56,14 +56,19 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full min-h-screen bg-[#121212]">
+      {/* Project Logo and HooMind text in the top-left corner */}
+      <div className="absolute top-4 left-4 flex items-center space-x-2">
+        <img src="/logo.png" alt="HooMind Logo" className="h-8 w-8 object-contain" />
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">HooMind</h1>
+      </div>
+
       {/* Main container to hold the LLM logo, chat interface, and user logo side-by-side */}
       <div className="flex items-center justify-center w-full h-full p-4">
-        <div className="w-[90%] max-w-4xl h-[80vh] bg-[#1E1E1E] rounded-2xl shadow-lg flex flex-col overflow-hidden border border-gray-800 relative">
+        <div className="w-[95%] max-w-5xl h-[90vh] bg-[#1E1E1E] rounded-2xl shadow-lg flex flex-col overflow-hidden border border-gray-800 relative">
           {/* Header */}
           <div className="p-4 border-b border-gray-800 flex items-center">
             {/* LLM Logo - Left side of the Hooman text */}
             <img src="/llm.png" alt="LLM Profile" className="w-10 h-10 rounded-full mr-3 object-cover" />
-            <h1 className="text-xl font-semibold text-white">Hooman</h1>
           </div>
 
           {/* Status Bar */}
@@ -76,30 +81,30 @@ export default function Home() {
             </div>
           )}
 
-          {/* Chat Messages */}
+        {/* Chat Messages */}
           <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent relative">
-            {messages.length === 0 ? (
+          {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-gray-500 text-center">DeFi meets intelligence — ask me to optimize, invest, and grow your crypto portfolio</p>
               </div>
-            ) : (
-              messages.map((msg, index) => (
-                <div
-                  key={index}
+          ) : (
+            messages.map((msg, index) => (
+              <div
+                key={index}
                   className={`p-4 rounded-2xl max-w-[80%] ${
                     msg.sender === "user" ? "bg-[#6E41E2] text-white ml-auto" : "bg-[#2A2A2A] text-gray-200 mr-auto"
-                  }`}
-                >
-                  <ReactMarkdown
-                    components={{
+                }`}
+              >
+                <ReactMarkdown
+                  components={{
                       a: (props) => (
-                        <a
-                          {...props}
+                      <a
+                        {...props}
                           className="text-purple-300 underline hover:text-purple-200"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        />
-                      ),
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      />
+                    ),
                       code: ({ node, className, children, ...props }) => {
                         const match = /language-(\w+)/.exec(className || "");
                         return !className ? (
@@ -114,15 +119,15 @@ export default function Home() {
                           </div>
                         );
                       },
-                    }}
-                  >
-                    {msg.text}
-                  </ReactMarkdown>
-                </div>
-              ))
-            )}
+                  }}
+                >
+                  {msg.text}
+                </ReactMarkdown>
+              </div>
+            ))
+          )}
 
-            {/* Thinking Indicator */}
+          {/* Thinking Indicator */}
             {isThinking && (
               <div className="flex flex-col items-start space-y-2 text-gray-400">
                 {detailedSwapLogs.length > 0 ? (
@@ -156,30 +161,30 @@ export default function Home() {
               </div>
             )}
 
-            {/* Invisible div to track the bottom */}
-            <div ref={messagesEndRef} />
-          </div>
+          {/* Invisible div to track the bottom */}
+          <div ref={messagesEndRef} />
+        </div>
 
-          {/* Input Box */}
+        {/* Input Box */}
           <div className="p-4 border-t border-gray-800 flex items-center space-x-2">
-            <input
-              type="text"
+          <input
+            type="text"
               className="flex-grow p-3 rounded-xl bg-[#2A2A2A] border border-gray-700 text-white focus:outline-none focus:border-purple-500 transition-colors"
               placeholder="Type your message..."
-              value={input}
+            value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSendMessage()}
-              disabled={isThinking}
-            />
-            <button
-              onClick={onSendMessage}
+            disabled={isThinking}
+          />
+          <button
+            onClick={onSendMessage}
               className={`px-6 py-3 rounded-xl font-medium transition-all ${
                 isThinking ? "bg-gray-700 cursor-not-allowed text-gray-500" : "bg-[#6E41E2] hover:bg-[#5B35C5] text-white"
-              }`}
-              disabled={isThinking}
-            >
-              Send
-            </button>
+            }`}
+            disabled={isThinking}
+          >
+            Send
+          </button>
             {/* User Logo - Right side of the send button */}
             <img src="/user.png" alt="User Profile" className="w-10 h-10 rounded-full ml-3 object-cover" />
           </div>

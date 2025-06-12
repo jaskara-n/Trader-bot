@@ -6,8 +6,8 @@ import "./globals.css";
  * Metadata for the page
  */
 export const metadata: Metadata = {
-  title: "Hooman",
-  description: "HOOMAN | Where AI Meets DeFi",
+  title: "HooMind",
+  description: "HooMind | Where AI Meets DeFi",
 };
 
 /**
@@ -24,6 +24,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
       <body className="bg-[#121212]">{children}</body>
     </html>
   );
