@@ -16,9 +16,11 @@ import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {IV4Quoter} from "@uniswap/v4-periphery/src/interfaces/IV4Quoter.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TradeHandlerV4ForkTest is Test {
     TradeHandlerV4 public tradeHandler;
+    TradeHandlerV4 public implementation;
 
     HelperConfig helperConfig;
     HelperConfig.UniswapConfig activeConfig;
@@ -35,13 +37,25 @@ contract TradeHandlerV4ForkTest is Test {
         // Create and select fork
         fork = vm.createSelectFork(UNICHAIN_MAINNET_RPC_URL);
 
-        // Deploy TradeHandlerV4
-        tradeHandler = new TradeHandlerV4(
+        // Deploy implementation
+        implementation = new TradeHandlerV4();
+
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(
+            TradeHandlerV4.initialize.selector,
             activeConfig.universalRouter,
             activeConfig.poolManager,
             activeConfig.permit2,
             activeConfig.quoter
         );
+
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(implementation),
+            initData
+        );
+
+        // Set tradeHandler to proxy
+        tradeHandler = TradeHandlerV4(payable(address(proxy)));
 
         // Ensure we're on the right fork
         // assertEq(vm.activeFork(), fork);

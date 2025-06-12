@@ -55,6 +55,19 @@ contract HelperConfig is Script {
         return (uniswapConfig);
     }
 
+    function getBaseMainnetConfig() public pure returns (UniswapConfig memory) {
+        UniswapConfig memory uniswapConfig = UniswapConfig({
+            universalRouter: 0x6fF5693b99212Da76ad316178A184AB56D299b43,
+            quoter: 0x0d5e0F971ED27FBfF6c2837bf31316121532048D,
+            poolManager: 0x498581fF718922c3f8e6A244956aF099B2652b2b,
+            permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
+            usdc: address(0),
+            uni: address(0),
+            dai: address(0)
+        });
+        return (uniswapConfig);
+    }
+
     function getOptimismSepoliaConfig()
         public
         pure

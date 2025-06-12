@@ -75,3 +75,13 @@ $ cast --help
 - Mock USDT : 0x8CF1Aa2c13366c82767972B1AE35677dCfF28F52
 - Also deployed USDC/UNI uniswap v4 pool, fee tier 3000 with tick spacing 60, price ratio 1:2
 - deployed USDT/UNI uniswap v4 pool, fee tier 3000 with tick spacing 60, price ration 1:1
+
+## Base Mainnet
+
+=== Deployment Summary ===
+TradeHandlerV4 Proxy: 0x2A31468B5ef8d89e016e20a51bCF26b56C4fe39A
+TradeHandlerV4 Implementation: 0xBbf4E494AFA78Bb2F8D580D99A9559861589d21e
+Universal Router: 0x6fF5693b99212Da76ad316178A184AB56D299b43
+Pool Manager: 0x498581fF718922c3f8e6A244956aF099B2652b2b
+Permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3
+Quoter: 0x0d5e0F971ED27FBfF6c2837bf31316121532048D
