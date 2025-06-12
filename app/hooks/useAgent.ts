@@ -12,6 +12,7 @@ export function useAgent() {
   const [isThinking, setIsThinking] = useState(false);
   const [swapStatus, setSwapStatus] = useState<string | null>(null);
   const [detailedSwapLogs, setDetailedSwapLogs] = useState<string[]>([]); // New state for detailed logs
+  const [showCelebration, setShowCelebration] = useState(false); // New state for celebration overlay
   const currentAgentResponse = useRef<string>(""); // Ref to accumulate agent response chunks
   const swapCompletedSuccessfully = useRef<boolean>(false); // Ref to track if swap finished successfully
 
@@ -22,6 +23,7 @@ export function useAgent() {
     setIsThinking(true);
     setSwapStatus(null);
     setDetailedSwapLogs([]); // Clear detailed logs for new message
+    setShowCelebration(false); // Hide celebration on new message
     currentAgentResponse.current = ""; // Reset accumulated response for new message
     swapCompletedSuccessfully.current = false; // Reset swap success flag
 
@@ -97,8 +99,11 @@ export function useAgent() {
       setIsThinking(false);
       setSwapStatus(null); // Clear main swap status
       setDetailedSwapLogs([]); // Clear detailed logs when process ends
+      if (swapCompletedSuccessfully.current) {
+        setShowCelebration(true); // Show celebration if swap was successful
+      }
     }
   };
 
-  return { messages, sendMessage, isThinking, swapStatus, setSwapStatus, detailedSwapLogs }; // Export new state
+  return { messages, sendMessage, isThinking, swapStatus, setSwapStatus, detailedSwapLogs, showCelebration, setShowCelebration }; // Export new state
 }
