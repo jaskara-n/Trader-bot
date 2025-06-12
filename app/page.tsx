@@ -12,7 +12,7 @@ import AnalyseReportButton from "./components/AnalyseReportButton";
  */
 export default function Home() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, isThinking, swapStatus, detailedSwapLogs, showCelebration, setShowCelebration, showAnalyseButton } = useAgent();
+  const { messages, sendMessage, isThinking, swapStatus, detailedSwapLogs, showCelebration, setShowCelebration, showAnalyseButton, setShowAnalyseButton } = useAgent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const detailedLogsRef = useRef<HTMLDivElement>(null);
 
@@ -160,9 +160,6 @@ export default function Home() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* After the chat messages and before the input box */}
-          {showAnalyseButton && <AnalyseReportButton />}
-
           {/* Input Box */}
           <div className="p-4 border-t border-gray-800 flex items-center space-x-2">
             <input
@@ -186,30 +183,29 @@ export default function Home() {
             {/* User Logo - Right side of the send button */}
             <img src="/user.png" alt="User Profile" className="w-10 h-10 rounded-full ml-3 object-cover" />
           </div>
-        </div>
 
-        {/* Celebration Overlay - This remains a direct child of the main chat container, so it covers it */}
-        {showCelebration && (
-          <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 rounded-2xl w-full h-full"
-            style={{ backgroundImage: `url('/celebration.gif')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-            <div className="p-8 rounded-lg text-center relative">
-              <button
-                onClick={handleCloseCelebration}
-                className="absolute top-2 right-2 text-white text-xl font-bold p-2 rounded-full hover:bg-gray-700 focus:outline-none"
-              >
-                &times;
-              </button>
-              <h2 className="text-3xl font-bold text-white mb-4">Swap Successful!</h2>
-              <button
-                // onClick={handleCheckBalance} // Commented out for now
-                className="mt-4 px-6 py-3 bg-[#6E41E2] text-white rounded-xl font-medium hover:bg-[#5B35C5] transition-colors"
-              >
-                Do you want to check swapped token balance?
-              </button>
+          {/* Celebration Overlay - Moved back inside the chat interface to confine it */}
+          {showCelebration && (
+            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+                 style={{ backgroundImage: `url('/celebration.gif')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+              <div className="p-8 rounded-lg text-center relative">
+                <h2 className="text-3xl font-bold text-white mb-4">Swap Successful!</h2>
+                <button
+                  onClick={handleCloseCelebration}
+                  className="mt-4 px-6 py-3 bg-[#6E41E2] text-white rounded-xl font-medium hover:bg-[#5B35C5] transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Data Report Button - Top right corner of the page */}
+      {showAnalyseButton && (
+        <AnalyseReportButton onClose={() => setShowAnalyseButton(false)} />
+      )}
     </div>
   );
 }
