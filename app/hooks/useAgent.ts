@@ -13,6 +13,7 @@ export function useAgent() {
   const [swapStatus, setSwapStatus] = useState<string | null>(null);
   const [detailedSwapLogs, setDetailedSwapLogs] = useState<string[]>([]); // New state for detailed logs
   const [showCelebration, setShowCelebration] = useState(false); // New state for celebration overlay
+  const [showAnalyseButton, setShowAnalyseButton] = useState(false);
   const currentAgentResponse = useRef<string>(""); // Ref to accumulate agent response chunks
   const swapCompletedSuccessfully = useRef<boolean>(false); // Ref to track if swap finished successfully
 
@@ -26,6 +27,10 @@ export function useAgent() {
     setShowCelebration(false); // Hide celebration on new message
     currentAgentResponse.current = ""; // Reset accumulated response for new message
     swapCompletedSuccessfully.current = false; // Reset swap success flag
+
+    // Detect analysis-related questions (simple keyword check, can be improved)
+    const analysisKeywords = ["analyse", "analyze", "analysis", "report", "trend", "pattern", "chart", "performance"];
+    setShowAnalyseButton(analysisKeywords.some(word => input.toLowerCase().includes(word)));
 
     try {
       const response = await fetch("/api/agent", {
@@ -105,5 +110,5 @@ export function useAgent() {
     }
   };
 
-  return { messages, sendMessage, isThinking, swapStatus, setSwapStatus, detailedSwapLogs, showCelebration, setShowCelebration }; // Export new state
+  return { messages, sendMessage, isThinking, swapStatus, setSwapStatus, detailedSwapLogs, showCelebration, setShowCelebration, showAnalyseButton };
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAgent } from "./hooks/useAgent";
 import ReactMarkdown from "react-markdown";
+import AnalyseReportButton from "./components/AnalyseReportButton";
 
 /**
  * Home page for the AgentKit Quickstart
@@ -11,7 +12,7 @@ import ReactMarkdown from "react-markdown";
  */
 export default function Home() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, isThinking, swapStatus, detailedSwapLogs, showCelebration, setShowCelebration } = useAgent();
+  const { messages, sendMessage, isThinking, swapStatus, detailedSwapLogs, showCelebration, setShowCelebration, showAnalyseButton } = useAgent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const detailedLogsRef = useRef<HTMLDivElement>(null);
 
@@ -158,6 +159,9 @@ export default function Home() {
             {/* Invisible div to track the bottom */}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* After the chat messages and before the input box */}
+          {showAnalyseButton && <AnalyseReportButton />}
 
           {/* Input Box */}
           <div className="p-4 border-t border-gray-800 flex items-center space-x-2">

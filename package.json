@@ -31,6 +31,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-markdown": "^10.0.0",
+    "recharts": "^2.15.3",
     "solmate": "github:transmissions11/solmate",
     "viem": "^2.31.0",
     "wagmi": "^2.15.6"
