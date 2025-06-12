@@ -264,22 +264,23 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
       }) as Hash;
 
       this.updateStatus(`Swap transaction sent: ${swapTxHash}`, true);
-      const receipt = await this.verifyTransaction(swapTxHash, walletAddress, "success"); // Pass walletAddress
+      const receipt = await this.verifyTransaction(swapTxHash, walletAddress, "success");
 
-      const balanceAfter = await this.getTokenBalance(tokenInAddress, walletAddress);
-      this.updateStatus(`Balance after swap (${tokenIn}): ${formatUnits(balanceAfter, 18)}`, true);
+      // Get balances AFTER swap
+      const balanceAfterInput = await this.getTokenBalance(tokenInAddress, walletAddress);
+      const balanceAfterOutput = await this.getTokenBalance(tokenOutAddress, walletAddress);
 
-      if (balanceAfter >= balanceBeforeInput) {
-        // Adjusted comparison to balanceBeforeInput
-        throw new Error(`Swap transaction succeeded but token balance did not decrease. Before: ${formatUnits(balanceBeforeInput, 18)}, After: ${formatUnits(balanceAfter, 18)}`);
+      this.updateStatus(`Balance after swap (${tokenIn}): ${formatUnits(balanceAfterInput, 18)}`, true);
+
+      if (balanceAfterInput >= balanceBeforeInput) {
+        throw new Error(`Swap transaction succeeded but token balance did not decrease. Before: ${formatUnits(balanceBeforeInput, 18)}, After: ${formatUnits(balanceAfterInput, 18)}`);
       }
 
-      const balanceChange = balanceBeforeInput - balanceAfter; // Adjusted calculation
+      const balanceChange = balanceBeforeInput - balanceAfterInput;
       this.updateStatus(`Balance change: ${formatUnits(balanceChange, 18)} ${tokenIn}`, true);
 
       // Check if we received the output token
-      const outputBalance = await this.getTokenBalance(tokenOutAddress, walletAddress);
-      this.updateStatus(`Output token balance: ${formatUnits(outputBalance, 18)} ${tokenOut}`, true);
+      this.updateStatus(`Output token balance: ${formatUnits(balanceAfterOutput, 18)} ${tokenOut}`, true);
 
       // Construct response with transaction hashes and network information
       const response = {
@@ -302,7 +303,30 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
         }
       };
 
-      // Return a formatted string that includes all transaction hashes and network info
+      // Store swap transaction with balances and response
+      await recordTransaction(walletAddress, {
+        id: `tx-${Date.now()}`,
+        type: "swap",
+        details: {
+          tokens: [tokenIn, tokenOut],
+          amounts: [amountIn, minAmountOut],
+          balances: {
+            before: {
+              [tokenIn]: formatUnits(balanceBeforeInput, 18),
+              [tokenOut]: formatUnits(balanceBeforeOutput, 18),
+            },
+            after: {
+              [tokenIn]: formatUnits(balanceAfterInput, 18),
+              [tokenOut]: formatUnits(balanceAfterOutput, 18),
+            }
+          },
+          timestamp: Date.now(),
+          txHash: swapTxHash,
+          status: receipt.status,
+          response, // Store the full response object
+        }
+      });
+
       this.updateStatus("Swap completed successfully!"); // Main status
       return JSON.stringify(response);
     } catch (error: unknown) {
