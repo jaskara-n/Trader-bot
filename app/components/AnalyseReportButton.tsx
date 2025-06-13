@@ -2,7 +2,11 @@ import React from "react";
 
 export default function AnalyseReportButton({ onClose }: { onClose: () => void }) {
   const openAnalysisReport = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_URL;
+    if (!baseUrl) {
+      console.error("NEXT_PUBLIC_URL is not defined");
+      return;
+    }
     window.open(`${baseUrl}/analysis`, "_blank");
   };
 
