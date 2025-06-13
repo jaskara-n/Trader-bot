@@ -205,3 +205,8 @@ $ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --pri
 #### Base Sepolia
 
 - Trade handler v4: `0x00116c0965D08f284A50EcCbCB0bDDC7A9E75b08`
+
+#### Base Mainnet
+-  TradeHandlerV4 Proxy: 0x2A31468B5ef8d89e016e20a51bCF26b56C4fe39A
+-  TradeHandlerV4 Implementation: 0xBbf4E494AFA78Bb2F8D580D99A9559861589d21e
+
