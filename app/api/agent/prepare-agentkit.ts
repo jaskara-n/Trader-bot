@@ -60,9 +60,12 @@ const WALLET_DATA_FILE = "wallet_data.txt";
  *
  * @throws {Error} If the agent initialization fails.
  */
-export async function prepareAgentkitAndWalletProvider(): Promise<{
+export async function prepareAgentkitAndWalletProvider(
+  statusCallback?: (status: string) => void
+): Promise<{
   agentkit: AgentKit;
   walletProvider: WalletProvider;
+  swapActionProviderInstance: ReturnType<typeof swapActionProvider>;
 }> {
   try {
     // Initialize WalletProvider: https://docs.cdp.coinbase.com/agentkit/docs/wallet-management
@@ -100,13 +103,15 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
     // });
 
     // Initialize AgentKit: https://docs.cdp.coinbase.com/agentkit/docs/agent-actions
+    const swapProviderInstance = swapActionProvider(statusCallback);
+
     const actionProviders: ActionProvider[] = [
-      stakeActionProvider(), 
       wethActionProvider(),
       pythActionProvider(),
       walletActionProvider(),
       erc20ActionProvider(),
-      swapActionProvider(),
+      stakeActionProvider(),
+      swapProviderInstance,
       compoundActionProvider(),
     ];
     const canUseCdpApi =
@@ -124,7 +129,7 @@ export async function prepareAgentkitAndWalletProvider(): Promise<{
       actionProviders,
     });
 
-    return { agentkit, walletProvider };
+    return { agentkit, walletProvider, swapActionProviderInstance: swapProviderInstance };
   } catch (error) {
     console.error("Error initializing agent:", error);
     throw new Error("Failed to initialize agent");

@@ -3,7 +3,7 @@ export interface TokenBalances {
   after: Record<string, string>;
 }
 
-// Swap transaction (current)
+// Swap transaction 
 export interface SwapTransaction {
   id: string;
   type: 'swap';
@@ -13,6 +13,8 @@ export interface SwapTransaction {
     balances?: TokenBalances;
     timestamp: number;
     txHash?: string;
+    status?: string;
+    response?: any; 
   };
 }
 

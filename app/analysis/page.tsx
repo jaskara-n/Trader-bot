@@ -1,0 +1,274 @@
+"use client";
+import { useEffect, useState } from "react";
+import {
+  PieChart, Pie, Cell, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line, AreaChart, Area,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  ScatterChart, Scatter,
+} from "recharts";
+
+const COLORS = ["#6E41E2", "#41E2C1", "#E241A1", "#E2B441", "#41A1E2", "#E26E41"];
+
+export default function AnalysisPage() {
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/transactions")
+      .then(res => res.json())
+      .then(setData);
+  }, []);
+
+  if (!data) return <div className="flex items-center justify-center h-screen bg-[#121212] text-white">Loading...</div>;
+
+  const { balancesNow, balancesBefore, balanceChange, chartData } = data;
+
+
+  // Stacked area chart safe
+const areaData = Object.keys(chartData.perTokenCumulative).length
+  ? Array.from({ length: data.transactions.length }, (_, idx) => ({
+      index: idx + 1,
+      ...Object.entries(chartData.perTokenCumulative).reduce(
+        (acc, [token, arr]) => ({
+          ...acc,
+          [token]: (arr as number[])[idx],
+        }),
+        {} as Record<string, number>
+      ),
+    }))
+  : [];
+
+
+  // Heatmap table
+  const heatmapTokens = Array.from(new Set(chartData.heatmapData.flatMap((d: any) => Object.keys(d).filter(k => k !== "date"))));
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-[#121212]">
+      <div className="w-full max-w-5xl px-0 sm:px-4">
+        {/* Centered, prominent heading */}
+        <div className="w-full flex justify-center">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight text-center my-8 w-full">
+            Portfolio Analysis Report
+          </h1>
+        </div>
+        {/* All charts in a grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Pie Chart: Token Distribution */}
+          <div className="bg-[#191919] px-20  rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Token Distribution</h2>
+            <PieChart width={300} height={250}>
+              <Pie data={chartData.pie} dataKey="value"  nameKey="token" cx="50%" cy="50%" outerRadius={80} label>
+                {chartData.pie.map((entry: any, idx: number) => (
+                  <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </div>
+          {/* Bar Chart: Balance Change */}
+          <div className="bg-[#191919] px-20 first:rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg  pl-20 mb-2 text-white font-semibold">Balance Change</h2>
+            <BarChart width={300} height={250} data={chartData.bar}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="token" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="value" fill="#41E2C1" />
+            </BarChart>
+          </div>
+          {/* Line Chart: Total Balance Over Time */}
+          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Total Balance Over Time</h2>
+            <LineChart width={300} height={250} data={chartData.line}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="index" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="total" stroke="#6E41E2" />
+            </LineChart>
+          </div>
+          {/* Area Chart: Transaction Value Over Time */}
+          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 pl-10 text-white font-semibold">Transaction Value Over Time</h2>
+            <AreaChart width={300} height={250} data={chartData.time}>
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#E241A1" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#E241A1" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" />
+              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" />
+              <Tooltip />
+              <Area type="monotone" dataKey="value" stroke="#E241A1" fillOpacity={1} fill="url(#colorValue)" />
+            </AreaChart>
+          </div>
+          {/* Radar Chart: Token Distribution */}
+          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 pl-10 text-white font-semibold">Radar: Token Distribution</h2>
+            <RadarChart cx={150} cy={125} outerRadius={80} width={300} height={250} data={chartData.tokenDistribution}>
+              <PolarGrid />
+              <PolarAngleAxis dataKey="token" />
+              <PolarRadiusAxis />
+              <Radar name="Tokens" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+              <Legend />
+            </RadarChart>
+          </div>
+          {/* Bar Chart: Transaction Types */}
+          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Transaction Types</h2>
+            <BarChart width={300} height={250} data={chartData.transactionTypes}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="type" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" fill="#E2B441" />
+            </BarChart>
+          </div>
+          {/* Stacked Area Chart: Per Token Cumulative */}
+          <div className="bg-[#191919]  px-40 rounded-xl p-4 shadow-lg border border-gray-800 md:col-span-2">
+            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Cumulative Balance Per Token</h2>
+            <AreaChart width={600} height={250} data={areaData}>
+              <defs>
+                {Object.keys(chartData.perTokenCumulative).map((token, idx) => (
+                  <linearGradient key={token} id={`color-${token}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS[idx % COLORS.length]} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={COLORS[idx % COLORS.length]} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <XAxis dataKey="index" />
+              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" />
+              <Tooltip />
+              <Legend />
+              {Object.keys(chartData.perTokenCumulative).map((token, idx) => (
+                <Area
+                  key={token}
+                  type="monotone"
+                  dataKey={token}
+                  stackId="1"
+                  stroke={COLORS[idx % COLORS.length]}
+                  fill={`url(#color-${token})`}
+                  fillOpacity={1}
+                />
+              ))}
+            </AreaChart>
+          </div>
+          {/* Scatter Chart: Amount vs. Time */}
+          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg pl-10 mb-2 text-white font-semibold">Transaction Amount vs. Time</h2>
+            <ScatterChart width={300} height={250}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" name="Date" tick={false} />
+              <YAxis dataKey="amount" name="Amount" />
+              <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+            {Array.from(new Set(chartData.scatter.map((d: any) => d.token))).map((token, idx) => (
+            <Scatter
+                key={token as string}
+                name={token as string}
+                data={chartData.scatter.filter((d: any) => d.token === token)}
+                fill={COLORS[idx % COLORS.length]}
+            />
+            ))}
+
+              <Legend />
+            </ScatterChart>
+          </div>
+          {/* Heatmap Table */}
+          <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 overflow-auto">
+            <h2 className="text-lg mb-2 text-white font-semibold">Token Usage Heatmap (per day)</h2>
+            <table className="table-auto w-full text-white text-xs md:text-sm">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1 border-b border-gray-700 text-left">Date</th>
+                  {heatmapTokens.map(token => (
+                    <th key={token as string} className="px-2 py-1 border-b border-gray-700 text-left">{token as string}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.heatmapData.map((row: any, idx: number) => (
+                  <tr key={idx}>
+                    <td className="px-2 py-1 border-b border-gray-800">{row.date}</td>
+                    {heatmapTokens.map(token => (
+                      <td
+                        key={token as string}
+                        className="px-2 py-1 border-b border-gray-800"
+                        style={{
+                          background: row[token as string] ? `rgba(110,65,226,${0.2 + 0.15 * Math.min(row[token as string], 4)})` : 'transparent'
+                        }}
+                      >
+                        {row[token as string] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Doughnut Chart (Pie for proportions) */}
+          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
+            <h2 className="text-lg pl-10 mb-2 text-white font-semibold">Transaction Type Proportions</h2>
+            <PieChart width={300} height={250}>
+              <Pie
+                data={chartData.doughnut}
+                dataKey="value"
+                nameKey="type"
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={80}
+                label
+              >
+                {chartData.doughnut.map((entry: any, idx: number) => (
+                  <Cell key={`cell-doughnut-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </div>
+          {/* Timeline */}
+          <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 col-span-1 md:col-span-2">
+            <h2 className="text-lg mb-2 text-white font-semibold">Recent Activity Timeline</h2>
+            <ul className="divide-y divide-gray-700 text-white">
+              {chartData.timeline.map((item: any, idx: number) => (
+                <li key={idx} className="py-2 flex items-start gap-4">
+                  <span className="inline-block font-bold capitalize min-w-[60px]">{item.type}</span>
+                  <span className="inline-block">{item.tokens.join(", ")}</span>
+                  <span className="inline-block font-mono text-xs">{item.date}</span>
+                  <span className="inline-block ml-auto text-purple-300">{item.amount > 0 ? `+${item.amount}` : ""}</span>
+                  {item.type === "stake" && <span className="text-gray-400 italic ml-2">{item.desc}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        {/* Balances Summary */}
+        <div className="mt-8 mb-7 text-white">
+          <h2 className="text-lg font-semibold text-center py-5 mb-2">Balances Summary</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <h3 className="font-bold">Current Balance</h3>
+              <pre className="bg-[#2A2A2A] rounded p-2">{JSON.stringify(balancesNow, null, 2)}</pre>
+            </div>
+            <div>
+              <h3 className="font-bold">Balance Before</h3>
+              <pre className="bg-[#2A2A2A] rounded p-2">{JSON.stringify(balancesBefore, null, 2)}</pre>
+            </div>
+            <div>
+              <h3 className="font-bold">Balance Change</h3>
+              <pre className="bg-[#2A2A2A] rounded p-2">{JSON.stringify(balanceChange, null, 2)}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
