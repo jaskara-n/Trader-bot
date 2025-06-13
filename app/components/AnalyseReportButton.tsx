@@ -2,7 +2,8 @@ import React from "react";
 
 export default function AnalyseReportButton({ onClose }: { onClose: () => void }) {
   const openAnalysisReport = () => {
-    window.open("http://localhost:3000/analysis", "_blank");
+    const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+    window.open(`${baseUrl}/analysis`, "_blank");
   };
 
   return (
