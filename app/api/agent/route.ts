@@ -1,8 +1,7 @@
 // app/api/agent/route.ts
-import { AgentRequest, StreamEvent, StreamMessageType, AgentStreamResponse, SwapStatusStreamResponse, DetailedStatusStreamResponse } from "@/app/types/api";
+import { AgentRequest, StreamEvent, StreamMessageType, AgentStreamResponse } from "@/app/types/api";
 import { NextResponse } from "next/server";
 import { createAgent } from "./create-agent";
-import { swapActionProvider } from "./actions/swap";
 import { recordStakeConversation } from "@/app/utils/transactionStore";
 
 // Helper: Detect stake with amount (stake 1, stake 2 ETH, etc.)
@@ -18,7 +17,8 @@ async function initializeXmtp() {
       `${process.env.NEXT_PUBLIC_URL || "http://localhost:3000"}/api/xmtp`
     );
   } catch (error) {
-    console.log("XMTP initialization in progress...");
+    console.error("Error initializing XMTP:", error);
+    return NextResponse.json({ error: "Failed to initialize XMTP" }, { status: 500 });
   }
 }
 initializeXmtp();
@@ -47,8 +47,6 @@ export async function POST(
         );
 
         // Set status callback on the returned instance (this is already set via createAgent now, but for clarity)
-        // The callback from createAgent will now handle both detailed and main statuses.
-        // We keep this line to ensure the instance's own setStatusCallback is used if the agent was cached.
         swapActionProviderInstance.setStatusCallback(
           (status: string, isDetailed: boolean = false) => {
             if (isDetailed) {
@@ -96,9 +94,9 @@ export async function POST(
         Connection: "keep-alive",
       },
     });
-  } catch (error) {
-    console.error("Error processing request:", error);
-    return NextResponse.json({ error: "Failed to process message" }, { status: 500 });
+  } catch (err) {
+    console.error("Error in agent route:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

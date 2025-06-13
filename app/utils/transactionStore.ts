@@ -74,11 +74,14 @@ export async function getStakeConversations(): Promise<StakeConversationTransact
   if (!data) return [];
   // Only return transactions that look like StakeConversationTransaction
   return (data.transactions || []).filter(
-    (tx: any): tx is StakeConversationTransaction =>
-      tx.type === 'stake' &&
-      tx.details &&
-      typeof tx.details.userInput === 'string' &&
-      typeof tx.details.response === 'string'
+    (tx: unknown): tx is StakeConversationTransaction => {
+      if (typeof tx !== 'object' || tx === null) return false;
+      const t = tx as Partial<StakeConversationTransaction>;
+      return t.type === 'stake' &&
+        !!t.details &&
+        typeof t.details.userInput === 'string' &&
+        typeof t.details.response === 'string';
+    }
   );
 }
 

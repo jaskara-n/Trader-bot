@@ -17,7 +17,6 @@ import { swapActionProvider } from "./actions/swap/index";
 import fs from "fs";
 import { createWalletClient, Hex, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { CdpWalletProvider } from "@coinbase/agentkit";
 /**
  * AgentKit Integration Route
  *

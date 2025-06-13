@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllTransactions } from "@/app/utils/transactionInsights";
-import type { Transaction, SwapTransaction, StakeConversationTransaction } from "@/app/types/transactions";
+import type { Transaction } from "@/app/types/transactions";
 
 // Helper: cumulative balances per token for each tx index
 function getPerTokenCumulative(txs: Transaction[]) {
@@ -86,8 +86,13 @@ export async function GET() {
 
   // Scatter: amount vs. time
   const scatter = txs
-    .filter(tx => tx.type === "swap" && tx.details.tokens && tx.details.amounts)
-    .flatMap((tx: any) =>
+    .filter(
+      (tx): tx is Transaction & { details: { tokens: string[]; amounts: string[]; timestamp: number } } =>
+        tx.type === "swap" &&
+        Array.isArray((tx.details as { tokens?: string[] }).tokens) &&
+        Array.isArray((tx.details as { amounts?: string[] }).amounts)
+    )
+    .flatMap((tx) =>
       tx.details.tokens.map((token: string, idx: number) => ({
         token,
         amount: Number(tx.details.amounts?.[idx] ?? 0),

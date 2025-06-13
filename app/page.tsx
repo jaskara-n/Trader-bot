@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAgent } from "./hooks/useAgent";
 import ReactMarkdown from "react-markdown";
 import AnalyseReportButton from "./components/AnalyseReportButton";
+import Image from 'next/image';
 
 /**
  * Home page for the AgentKit Quickstart
@@ -45,11 +46,6 @@ export default function Home() {
     await sendMessage(message);
   };
 
-  const handleCheckBalance = async () => {
-    setShowCelebration(false); // Hide celebration overlay
-    await sendMessage("Check my wallet balance for all listed tokens");
-  };
-
   const handleCloseCelebration = () => {
     setShowCelebration(false); // Close the celebration overlay
   };
@@ -59,7 +55,7 @@ export default function Home() {
       {/* Project Logo and HooMind text in the top-left corner */}
       <div className="absolute top-4 left-4 flex items-center space-x-2">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="HooMind Logo" className="w-8 h-8" />
+          <Image src="/logo.png" alt="HooMind Logo" className="w-8 h-8" width={32} height={32} />
           <span className="text-white text-3xl font-extrabold tracking-tight">
             <span className="text-[#8b5cf6]">H</span>oo<span className="text-[#8b5cf6]">M</span>ind
           </span>
@@ -72,7 +68,13 @@ export default function Home() {
           {/* Header */}
           <div className="p-4 border-b border-gray-800 flex items-center">
             {/* LLM Logo - Left side of the Hooman text */}
-            <img src="/llm.png" alt="LLM Profile" className="w-10 h-10 rounded-full mr-3 object-cover" />
+            <Image 
+              src="/llm.png"
+              alt="LLM Profile"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full mr-3 object-cover"
+            />
           </div>
 
           {/* Status Bar */}
@@ -109,18 +111,11 @@ export default function Home() {
                         rel="noopener noreferrer"
                       />
                     ),
-                      code: ({ node, className, children, ...props }) => {
-                        const match = /language-(\w+)/.exec(className || "");
-                        return !className ? (
-                          <code className="bg-gray-800 text-gray-200 px-1 py-0.5 rounded" {...props}>
+                      code: ({ className, children, ...props }) => {
+                        return (
+                          <code className={className || "bg-gray-800 text-gray-200 px-1 py-0.5 rounded"} {...props}>
                             {children}
                           </code>
-                        ) : (
-                          <div className="bg-gray-800 rounded-md p-4 my-2 overflow-x-auto">
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          </div>
                         );
                       },
                   }}
@@ -190,7 +185,13 @@ export default function Home() {
             Send
           </button>
             {/* User Logo - Right side of the send button */}
-            <img src="/user.png" alt="User Profile" className="w-10 h-10 rounded-full ml-3 object-cover" />
+            <Image 
+              src="/user.png"
+              alt="User Profile"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full ml-3 object-cover"
+            />
           </div>
 
           {/* Celebration Overlay - Moved back inside the chat interface to confine it */}
@@ -223,9 +224,9 @@ function LogEntry({ log }: { log: string }) {
   const renderLog = (text: string) => {
     let result = text;
     // Replace "UNI" with UNI logo and ticker
-    result = result.replace(/UNI/g, 'UNI <img src="/uni.png" alt="UNI" class="inline-block h-4 w-4 align-middle" />');
+    result = result.replace(/UNI/g, 'UNI <Image src="/uni.png" alt="UNI" className="inline-block h-4 w-4 align-middle" width={16} height={16} />');
     // Replace "USDC" with USDC logo and ticker
-    result = result.replace(/USDC/g, 'USDC <img src="/usdc.png" alt="USDC" class="inline-block h-4 w-4 align-middle" />');
+    result = result.replace(/USDC/g, 'USDC <Image src="/usdc.png" alt="USDC" className="inline-block h-4 w-4 align-middle" width={16} height={16} />');
     return <span dangerouslySetInnerHTML={{ __html: result }} />;
   };
 

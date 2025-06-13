@@ -1,10 +1,6 @@
-// @ts-ignore
-import { ActionProvider, CreateAction, Network } from "@coinbase/agentkit";
+import { ActionProvider, CreateAction } from "@coinbase/agentkit";
 import type { z } from "zod";
-import fs from "fs";
-import path from "path";
 import { swapActionSchema } from "./schema";
-import { ChatDeepSeek } from "@langchain/deepseek";
 import {
   Coinbase,
   ExternalAddress,
@@ -82,7 +78,7 @@ class SwapActionProvider extends ActionProvider {
     }
     return "staking action invoked with token: " + token;
   }
-  supportsNetwork(network: Network): boolean {
+  supportsNetwork(): boolean {
     return true;
   }
 }

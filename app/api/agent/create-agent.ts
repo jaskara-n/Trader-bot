@@ -1,7 +1,6 @@
 import { getLangChainTools } from "@coinbase/agentkit-langchain";
 import { MemorySaver } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { ChatOpenAI } from "@langchain/openai";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { prepareAgentkitAndWalletProvider } from "./prepare-agentkit";
 import { AgentKit } from "@coinbase/agentkit";
