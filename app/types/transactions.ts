@@ -14,7 +14,7 @@ export interface SwapTransaction {
     timestamp: number;
     txHash?: string;
     status?: string;
-    response?: any; 
+    response?: Record<string, unknown>; 
   };
 }
 

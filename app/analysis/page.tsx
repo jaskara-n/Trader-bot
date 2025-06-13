@@ -12,8 +12,30 @@ import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 const COLORS = ["#6E41E2", "#41E2C1", "#E241A1", "#E2B441", "#41A1E2", "#E26E41"];
 
+interface ChartData {
+  pie: Array<{ token: string; value: number }>;
+  bar: Array<{ token: string; value: number }>;
+  line: Array<{ index: number; total: number }>;
+  time: Array<{ date: string; value: number }>;
+  tokenDistribution: Array<{ token: string; value: number }>;
+  transactionTypes: Array<{ type: string; count: number }>;
+  perTokenCumulative: Record<string, number[]>;
+  heatmapData: Array<Record<string, string | number>>;
+  scatter: Array<{ x: number; y: number; token: string }>;
+  doughnut: Array<{ token: string; value: number }>;
+  timeline: Array<{ date: string; value: number; type: string; tokens?: string[]; amount?: number; desc?: string }>;
+}
+
+interface AnalysisData {
+  balancesNow: Record<string, string>;
+  balancesBefore: Record<string, string>;
+  balanceChange: Record<string, string>;
+  chartData: ChartData;
+  transactions: Array<unknown>;
+}
+
 export default function AnalysisPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchData = () => {
@@ -54,7 +76,7 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
   : [];
 
   // Heatmap table
-  const heatmapTokens: string[] = Array.from(new Set<string>(chartData.heatmapData.flatMap((d: any) => Object.keys(d).filter((k: string) => k !== "date"))));
+  const heatmapTokens: string[] = Array.from(new Set<string>(chartData.heatmapData.flatMap((d: Record<string, string | number>) => Object.keys(d).filter((k: string) => k !== "date"))));
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-[#121212] w-full relative">
@@ -66,10 +88,10 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
       {/* Centered, prominent heading for full width */}
       <div className="w-full flex flex-col items-center my-8">
         <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight text-center px-4">
-          Portfolio Analysis Report
-        </h1>
+            Portfolio Analysis Report
+          </h1>
         <div className="w-3/4 h-1 bg-[#8b5cf6] mt-2"></div> {/* Underline */}
-      </div>
+        </div>
 
       {/* Refresh Button */}
       <button
@@ -89,7 +111,7 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
               <Pie data={chartData.pie} dataKey="value"  nameKey="token" cx="50%" cy="50%" outerRadius={80} label>
-                {chartData.pie.map((entry: any, idx: number) => (
+                {chartData.pie.map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                 ))}
               </Pie>
@@ -213,11 +235,11 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <XAxis dataKey="date" name="Date" tick={false} />
               <YAxis dataKey="amount" name="Amount" />
               <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-              {Array.from(new Set<string>(chartData.scatter.map((d: any) => d.token))).map((token: string, idx: number) => (
+              {Array.from(new Set<string>(chartData.scatter.map((d) => d.token))).map((token: string, idx: number) => (
             <Scatter
                   key={token}
                   name={token}
-                data={chartData.scatter.filter((d: any) => d.token === token)}
+                data={chartData.scatter.filter((d) => d.token === token)}
                 fill={COLORS[idx % COLORS.length]}
             />
             ))}
@@ -241,7 +263,7 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
                 outerRadius={80}
                 label
               >
-                {chartData.doughnut.map((entry: any, idx: number) => (
+                {chartData.doughnut.map((entry, idx) => (
                   <Cell key={`cell-doughnut-${idx}`} fill={COLORS[idx % COLORS.length]} />
                 ))}
               </Pie>
@@ -263,7 +285,7 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
                 </tr>
               </thead>
               <tbody>
-                {chartData.heatmapData.map((row: any, idx: number) => (
+                {chartData.heatmapData.map((row, idx) => (
                   <tr key={idx}>
                     <td className="px-2 py-1 border-b border-gray-800">{row.date}</td>
                     {heatmapTokens.map((token: string) => (
@@ -271,7 +293,7 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
                         key={token}
                         className="px-2 py-1 border-b border-gray-800"
                         style={{
-                          background: row[token] ? `rgba(110,65,226,${0.2 + 0.15 * Math.min(row[token], 4)})` : 'transparent'
+                          background: row[token] ? `rgba(110,65,226,${0.2 + 0.15 * Math.min(Number(row[token]), 4)})` : 'transparent'
                         }}
                       >
                         {row[token] || 0}
@@ -286,12 +308,12 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
           <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 col-span-1 md:col-span-2 lg:col-span-3">
             <h2 className="text-lg mb-2 px-4 text-white font-semibold">Recent Activity Timeline</h2>
             <ul className="divide-y divide-gray-700 text-white">
-              {chartData.timeline.map((item: any, idx: number) => (
+              {chartData.timeline.map((item, idx) => (
                 <li key={idx} className="py-2 flex items-start gap-4">
                   <span className="inline-block font-bold capitalize min-w-[60px]">{item.type}</span>
-                  <span className="inline-block">{item.tokens.join(", ")}</span>
+                  <span className="inline-block">{item.tokens?.join(", ")}</span>
                   <span className="inline-block font-mono text-xs">{item.date}</span>
-                  <span className="inline-block ml-auto text-purple-300">{item.amount > 0 ? `+${item.amount}` : ""}</span>
+                  <span className="inline-block ml-auto text-purple-300">{item.amount && item.amount > 0 ? `+${item.amount}` : ""}</span>
                   {item.type === "stake" && <span className="text-gray-400 italic ml-2">{item.desc}</span>}
                 </li>
               ))}

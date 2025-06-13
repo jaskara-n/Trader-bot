@@ -12,7 +12,6 @@ import {
   type PublicClient,
   type Hash,
   formatUnits,
-  type Chain,
   type Transport,
 } from "viem";
 import { baseSepolia } from "viem/chains";
@@ -164,7 +163,7 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
       this.updateStatus(`Approval transaction sent: ${hash}`, true);
 
       // Wait for approval transaction and verify it succeeded
-      const receipt = await this.verifyTransaction(hash as Hash, walletAddress);
+      await this.verifyTransaction(hash as Hash, walletAddress);
       
       // Verify the allowance was actually updated
       const newAllowance = await this.publicClient.readContract({
@@ -201,7 +200,7 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
     const walletAddress = wallet.getAddress() as Address;
     this.updateStatus(`Wallet address: ${walletAddress}`, true);
 
-    const { tokenIn, tokenOut, amountIn, minAmountOut, fee = 3000 } = args;
+    const { tokenIn, tokenOut, amountIn, minAmountOut } = args;
     let approvalTxHash: Hash | undefined; // Declared here
     let swapTxHash: Hash | undefined; // Declared here
 
@@ -264,7 +263,7 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
       }) as Hash;
 
       this.updateStatus(`Swap transaction sent: ${swapTxHash}`, true);
-      const receipt = await this.verifyTransaction(swapTxHash, walletAddress, "success");
+      await this.verifyTransaction(swapTxHash, walletAddress, "success");
 
       // Get balances AFTER swap
       const balanceAfterInput = await this.getTokenBalance(tokenInAddress, walletAddress);
@@ -309,7 +308,7 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
         type: "swap",
         details: {
           tokens: [tokenIn, tokenOut],
-          amounts: [amountIn, minAmountOut],
+          amounts: [amountIn.toString(), minAmountOut.toString()],
           balances: {
             before: {
               [tokenIn]: formatUnits(balanceBeforeInput, 18),
@@ -322,8 +321,8 @@ class SwapActionProvider extends ActionProvider<ViemWalletProvider> {
           },
           timestamp: Date.now(),
           txHash: swapTxHash,
-          status: receipt.status,
-          response, // Store the full response object
+          status: "success",
+          response // Store the full response object
         }
       });
 
