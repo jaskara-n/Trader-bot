@@ -75,7 +75,7 @@ This project creates an AI-powered trading agent that automatically executes tra
    - Automatically executes transactions using its wallet
 4. All actions and confirmations are communicated via XMTP:
    - Trade executions
-   - Portfolio updates
+   - Portfolio updates/ dashboard with analytics
    - Performance reports
 
 ## Key Features
@@ -88,6 +88,7 @@ This project creates an AI-powered trading agent that automatically executes tra
    - DeFi Llama price feeds integration
 4. **Non-Custodial**: Users maintain control through their own wallets
 5. **Transparent**: All actions and results communicated via XMTP
+6. **Portfolio Dashboard with Analysis**: Full AI powered analysis for current portfolio investments
 
 ## Technical Documentation
 
