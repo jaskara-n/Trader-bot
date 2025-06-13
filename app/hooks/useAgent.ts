@@ -110,5 +110,5 @@ export function useAgent() {
     }
   };
 
-  return { messages, sendMessage, isThinking, swapStatus, setSwapStatus, detailedSwapLogs, showCelebration, setShowCelebration, showAnalyseButton };
+  return { messages, sendMessage, isThinking, swapStatus, setSwapStatus, detailedSwapLogs, showCelebration, setShowCelebration, showAnalyseButton, setShowAnalyseButton };
 }

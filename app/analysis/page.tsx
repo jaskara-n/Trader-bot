@@ -6,23 +6,38 @@ import {
   LineChart, Line, AreaChart, Area,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ScatterChart, Scatter,
+  ResponsiveContainer
 } from "recharts";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 const COLORS = ["#6E41E2", "#41E2C1", "#E241A1", "#E2B441", "#41A1E2", "#E26E41"];
 
 export default function AnalysisPage() {
   const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  useEffect(() => {
+  const fetchData = () => {
+    setIsLoading(true);
     fetch("/api/transactions")
       .then(res => res.json())
-      .then(setData);
+      .then(fetchedData => {
+        setData(fetchedData);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error("Error fetching data:", error);
+        setIsLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchData(); // Initial data fetch
   }, []);
 
-  if (!data) return <div className="flex items-center justify-center h-screen bg-[#121212] text-white">Loading...</div>;
+  if (!data && isLoading) return <div className="flex items-center justify-center h-screen bg-[#121212] text-white">Loading...</div>;
+  if (!data) return null; // Or a minimal loading indicator if initial fetch is not yet complete
 
   const { balancesNow, balancesBefore, balanceChange, chartData } = data;
-
 
   // Stacked area chart safe
 const areaData = Object.keys(chartData.perTokenCumulative).length
@@ -38,25 +53,41 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
     }))
   : [];
 
-
   // Heatmap table
-  const heatmapTokens = Array.from(new Set(chartData.heatmapData.flatMap((d: any) => Object.keys(d).filter(k => k !== "date"))));
+  const heatmapTokens: string[] = Array.from(new Set<string>(chartData.heatmapData.flatMap((d: any) => Object.keys(d).filter((k: string) => k !== "date"))));
 
   return (
-    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-[#121212]">
-      <div className="w-full max-w-5xl px-0 sm:px-4">
-        {/* Centered, prominent heading */}
-        <div className="w-full flex justify-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight text-center my-8 w-full">
-            Portfolio Analysis Report
-          </h1>
+    <div className="flex flex-col items-center min-h-screen bg-[#121212] w-full relative">
+      {isLoading && (
+        <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 text-white text-2xl">
+          Loading...
         </div>
+      )}
+      {/* Centered, prominent heading for full width */}
+      <div className="w-full flex flex-col items-center my-8">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight text-center px-4">
+          Portfolio Analysis Report
+        </h1>
+        <div className="w-3/4 h-1 bg-[#8b5cf6] mt-2"></div> {/* Underline */}
+      </div>
+
+      {/* Refresh Button */}
+      <button
+        onClick={fetchData}
+        className="absolute top-4 right-4 p-2 rounded-full bg-[#191919] text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 z-10"
+        aria-label="Refresh Data"
+      >
+        <ArrowPathIcon className="w-6 h-6" />
+      </button>
+
+      <div className="w-full max-w-7xl px-8 mb-8">
         {/* All charts in a grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Pie Chart: Token Distribution */}
-          <div className="bg-[#191919] px-20  rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Token Distribution</h2>
-            <PieChart width={300} height={250}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Token Distribution</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
               <Pie data={chartData.pie} dataKey="value"  nameKey="token" cx="50%" cy="50%" outerRadius={80} label>
                 {chartData.pie.map((entry: any, idx: number) => (
                   <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
@@ -65,11 +96,13 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <Tooltip />
               <Legend />
             </PieChart>
+            </ResponsiveContainer>
           </div>
           {/* Bar Chart: Balance Change */}
-          <div className="bg-[#191919] px-20 first:rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg  pl-20 mb-2 text-white font-semibold">Balance Change</h2>
-            <BarChart width={300} height={250} data={chartData.bar}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Balance Change</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData.bar}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="token" />
               <YAxis />
@@ -77,11 +110,13 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <Legend />
               <Bar dataKey="value" fill="#41E2C1" />
             </BarChart>
+            </ResponsiveContainer>
           </div>
           {/* Line Chart: Total Balance Over Time */}
-          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Total Balance Over Time</h2>
-            <LineChart width={300} height={250} data={chartData.line}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Total Balance Over Time</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData.line}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="index" />
               <YAxis />
@@ -89,11 +124,13 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <Legend />
               <Line type="monotone" dataKey="total" stroke="#6E41E2" />
             </LineChart>
+            </ResponsiveContainer>
           </div>
           {/* Area Chart: Transaction Value Over Time */}
-          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg mb-2 pl-10 text-white font-semibold">Transaction Value Over Time</h2>
-            <AreaChart width={300} height={250} data={chartData.time}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Transaction Value Over Time</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={chartData.time}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#E241A1" stopOpacity={0.8}/>
@@ -106,22 +143,26 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <Tooltip />
               <Area type="monotone" dataKey="value" stroke="#E241A1" fillOpacity={1} fill="url(#colorValue)" />
             </AreaChart>
+            </ResponsiveContainer>
           </div>
           {/* Radar Chart: Token Distribution */}
-          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg mb-2 pl-10 text-white font-semibold">Radar: Token Distribution</h2>
-            <RadarChart cx={150} cy={125} outerRadius={80} width={300} height={250} data={chartData.tokenDistribution}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Radar: Token Distribution</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData.tokenDistribution}>
               <PolarGrid />
               <PolarAngleAxis dataKey="token" />
               <PolarRadiusAxis />
               <Radar name="Tokens" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
               <Legend />
             </RadarChart>
+            </ResponsiveContainer>
           </div>
           {/* Bar Chart: Transaction Types */}
-          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Transaction Types</h2>
-            <BarChart width={300} height={250} data={chartData.transactionTypes}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Transaction Types</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData.transactionTypes}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="type" />
               <YAxis />
@@ -129,13 +170,15 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <Legend />
               <Bar dataKey="count" fill="#E2B441" />
             </BarChart>
+            </ResponsiveContainer>
           </div>
           {/* Stacked Area Chart: Per Token Cumulative */}
-          <div className="bg-[#191919]  px-40 rounded-xl p-4 shadow-lg border border-gray-800 md:col-span-2">
-            <h2 className="text-lg mb-2 pl-20 text-white font-semibold">Cumulative Balance Per Token</h2>
-            <AreaChart width={600} height={250} data={areaData}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800 md:col-span-2 lg:col-span-3">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Cumulative Balance Per Token</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={areaData}>
               <defs>
-                {Object.keys(chartData.perTokenCumulative).map((token, idx) => (
+                  {Object.keys(chartData.perTokenCumulative).map((token: string, idx: number) => (
                   <linearGradient key={token} id={`color-${token}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={COLORS[idx % COLORS.length]} stopOpacity={0.8} />
                     <stop offset="95%" stopColor={COLORS[idx % COLORS.length]} stopOpacity={0} />
@@ -147,7 +190,7 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <CartesianGrid strokeDasharray="3 3" />
               <Tooltip />
               <Legend />
-              {Object.keys(chartData.perTokenCumulative).map((token, idx) => (
+                {Object.keys(chartData.perTokenCumulative).map((token: string, idx: number) => (
                 <Area
                   key={token}
                   type="monotone"
@@ -159,19 +202,21 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
                 />
               ))}
             </AreaChart>
+            </ResponsiveContainer>
           </div>
           {/* Scatter Chart: Amount vs. Time */}
-          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg pl-10 mb-2 text-white font-semibold">Transaction Amount vs. Time</h2>
-            <ScatterChart width={300} height={250}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Transaction Amount vs. Time</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" name="Date" tick={false} />
               <YAxis dataKey="amount" name="Amount" />
               <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-            {Array.from(new Set(chartData.scatter.map((d: any) => d.token))).map((token, idx) => (
+              {Array.from(new Set<string>(chartData.scatter.map((d: any) => d.token))).map((token: string, idx: number) => (
             <Scatter
-                key={token as string}
-                name={token as string}
+                  key={token}
+                  name={token}
                 data={chartData.scatter.filter((d: any) => d.token === token)}
                 fill={COLORS[idx % COLORS.length]}
             />
@@ -179,43 +224,13 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
 
               <Legend />
             </ScatterChart>
-          </div>
-          {/* Heatmap Table */}
-          <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 overflow-auto">
-            <h2 className="text-lg mb-2 text-white font-semibold">Token Usage Heatmap (per day)</h2>
-            <table className="table-auto w-full text-white text-xs md:text-sm">
-              <thead>
-                <tr>
-                  <th className="px-2 py-1 border-b border-gray-700 text-left">Date</th>
-                  {heatmapTokens.map(token => (
-                    <th key={token as string} className="px-2 py-1 border-b border-gray-700 text-left">{token as string}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {chartData.heatmapData.map((row: any, idx: number) => (
-                  <tr key={idx}>
-                    <td className="px-2 py-1 border-b border-gray-800">{row.date}</td>
-                    {heatmapTokens.map(token => (
-                      <td
-                        key={token as string}
-                        className="px-2 py-1 border-b border-gray-800"
-                        style={{
-                          background: row[token as string] ? `rgba(110,65,226,${0.2 + 0.15 * Math.min(row[token as string], 4)})` : 'transparent'
-                        }}
-                      >
-                        {row[token as string] || 0}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            </ResponsiveContainer>
           </div>
           {/* Doughnut Chart (Pie for proportions) */}
-          <div className="bg-[#191919] px-20 rounded-xl p-4 shadow-lg border border-gray-800">
-            <h2 className="text-lg pl-10 mb-2 text-white font-semibold">Transaction Type Proportions</h2>
-            <PieChart width={300} height={250}>
+          <div className="bg-[#191919] p-4 rounded-xl shadow-lg border border-gray-800">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Transaction Type Proportions</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
               <Pie
                 data={chartData.doughnut}
                 dataKey="value"
@@ -233,10 +248,43 @@ const areaData = Object.keys(chartData.perTokenCumulative).length
               <Tooltip />
               <Legend />
             </PieChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Heatmap Table */}
+          <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 overflow-auto md:col-span-2 lg:col-span-3">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Token Usage Heatmap (per day)</h2>
+            <table className="table-auto w-full text-white text-xs md:text-sm">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1 border-b border-gray-700 text-left">Date</th>
+                  {heatmapTokens.map((token: string) => (
+                    <th key={token} className="px-2 py-1 border-b border-gray-700 text-left">{token}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.heatmapData.map((row: any, idx: number) => (
+                  <tr key={idx}>
+                    <td className="px-2 py-1 border-b border-gray-800">{row.date}</td>
+                    {heatmapTokens.map((token: string) => (
+                      <td
+                        key={token}
+                        className="px-2 py-1 border-b border-gray-800"
+                        style={{
+                          background: row[token] ? `rgba(110,65,226,${0.2 + 0.15 * Math.min(row[token], 4)})` : 'transparent'
+                        }}
+                      >
+                        {row[token] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           {/* Timeline */}
-          <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 col-span-1 md:col-span-2">
-            <h2 className="text-lg mb-2 text-white font-semibold">Recent Activity Timeline</h2>
+          <div className="bg-[#191919] rounded-xl p-4 shadow-lg border border-gray-800 col-span-1 md:col-span-2 lg:col-span-3">
+            <h2 className="text-lg mb-2 px-4 text-white font-semibold">Recent Activity Timeline</h2>
             <ul className="divide-y divide-gray-700 text-white">
               {chartData.timeline.map((item: any, idx: number) => (
                 <li key={idx} className="py-2 flex items-start gap-4">
